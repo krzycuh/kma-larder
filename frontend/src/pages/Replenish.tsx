@@ -23,7 +23,7 @@ export function Replenish() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title={t.replenish.title} description={t.replenish.subtitle} />
+      <PageHeader title={t.replenish.title} description={t.replenish.subtitle} backLabel={t.nav.home} />
       <div className="mb-4">
         <PantrySwitcher />
       </div>

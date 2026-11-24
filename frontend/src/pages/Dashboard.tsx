@@ -155,9 +155,11 @@ export function Dashboard() {
                             <p className="truncate font-medium text-gray-900">
                               {batch.quantity} × {batch.product.name}
                             </p>
-                            <p className="text-xs text-gray-500">{batch.expiresOn ? t.batch.expiresOn(formatDate(batch.expiresOn)) : t.batch.noDate}</p>
+                            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                              <span>{batch.expiresOn ? t.batch.expiresOn(formatDate(batch.expiresOn)) : t.batch.noDate}</span>
+                              <FreshnessBadge status={batch.freshness} detail={describeDaysLeft(batch.daysLeft)} />
+                            </p>
                           </div>
-                          <FreshnessBadge status={batch.freshness} detail={describeDaysLeft(batch.daysLeft)} />
                         </Link>
                       </li>
                     ))}
@@ -188,7 +190,7 @@ export function Dashboard() {
                               {t.replenish.have(item.quantity)} · {t.replenish.want(item.minQuantity)}
                             </p>
                           </div>
-                          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">{t.replenish.missing(item.missing)}</span>
+                          <span className="shrink-0 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">{t.replenish.missing(item.missing)}</span>
                         </Link>
                       </li>
                     ))}

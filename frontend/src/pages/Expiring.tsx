@@ -36,7 +36,7 @@ export function Expiring() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title={t.expiring.title} description={t.expiring.subtitle} />
+      <PageHeader title={t.expiring.title} description={t.expiring.subtitle} backLabel={t.nav.home} />
       <div className="mb-4">
         <PantrySwitcher />
       </div>

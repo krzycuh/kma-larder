@@ -59,6 +59,7 @@ export function Stock() {
       <PageHeader
         title={t.stock.title}
         description={t.stock.subtitle}
+        backLabel={t.nav.home}
         actions={
           <Link
             to="/add"
