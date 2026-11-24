@@ -13,6 +13,7 @@ import { inputClasses } from '../utils/formStyles';
 import { ApproximateDateInput } from '../components/ApproximateDateInput';
 import { QuantityStepper } from '../components/QuantityStepper';
 import { BarcodeScanner } from '../components/BarcodeScanner';
+import { OcrDateDialog } from '../components/OcrDateDialog';
 import { NavIcon } from '../components/NavIcon';
 import { useCurrentPantry } from '../hooks/usePantries';
 import { useInvalidateStock } from '../hooks/useStockMutations';
@@ -20,7 +21,7 @@ import { useToast } from '../hooks/useToast';
 import { t } from '../i18n';
 import type { BatchRequest, Product } from '../types/stock';
 import { getApiErrorMessage } from '../utils/apiError';
-import { EMPTY_DATE_INPUT, isPast, parseDateInput, type ApproximateDateInputValue } from '../utils/approximateDate';
+import { EMPTY_DATE_INPUT, isPast, parseDateInput, toDateInput, type ApproximateDateInputValue } from '../utils/approximateDate';
 import { buildProductRequest, DEFAULT_PRODUCT_FIELDS, type ProductFieldsValue, type ProductFormErrors } from '../utils/productForm';
 import { normalizeBarcode } from '../utils/barcode';
 
@@ -51,6 +52,7 @@ export function AddStock() {
   const [location, setLocation] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [scannerOpen, setScannerOpen] = useState(searchParams.get('scan') === '1');
+  const [ocrTarget, setOcrTarget] = useState<'bestBefore' | 'producedOn' | null>(null);
   const [addAnother, setAddAnother] = useState(false);
 
   const prefill = useQuery({ queryKey: ['product', prefillId], queryFn: () => productsApi.get(prefillId!), enabled: !!prefillId });
@@ -157,6 +159,16 @@ export function AddStock() {
   if (!pantry) return <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.pantry.noPantry} />;
 
   const parsedBestBefore = parseDateInput(bestBefore).date;
+  const ocrButton = (target: 'bestBefore' | 'producedOn') => (
+    <button
+      type="button"
+      onClick={() => setOcrTarget(target)}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <NavIcon name="camera" className="h-4 w-4" />
+      {t.addStock.readDate}
+    </button>
+  );
   const scanButton = (
     <>
       <button
@@ -237,7 +249,15 @@ export function AddStock() {
             {errors.quantity && <p className="mt-1 text-sm text-red-700">{errors.quantity}</p>}
           </div>
           {kind === 'HOMEMADE' && (
-            <ApproximateDateInput id="produced-on" label={t.batch.producedOn} hint={t.batch.producedOnHint} value={producedOn} onChange={setProducedOn} error={errors.producedOn} />
+            <ApproximateDateInput
+              id="produced-on"
+              label={t.batch.producedOn}
+              hint={t.batch.producedOnHint}
+              value={producedOn}
+              onChange={setProducedOn}
+              error={errors.producedOn}
+              action={ocrButton('producedOn')}
+            />
           )}
           <ApproximateDateInput
             id="best-before"
@@ -246,6 +266,7 @@ export function AddStock() {
             value={bestBefore}
             onChange={setBestBefore}
             error={errors.bestBefore ?? (parsedBestBefore && isPast(parsedBestBefore) ? t.batch.inPast : null)}
+            action={ocrButton('bestBefore')}
           />
           <div>
             <label htmlFor="batch-location" className="block text-sm font-medium text-gray-700">
@@ -274,6 +295,15 @@ export function AddStock() {
       </form>
 
       <BarcodeScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onDetected={onScanned} />
+      <OcrDateDialog
+        open={ocrTarget !== null}
+        onClose={() => setOcrTarget(null)}
+        onPick={(date) => {
+          if (ocrTarget === 'producedOn') setProducedOn(toDateInput(date));
+          else setBestBefore(toDateInput(date));
+          setOcrTarget(null);
+        }}
+      />
     </div>
   );
 }

@@ -38,3 +38,7 @@ coverage
 # Playwright
 test-results
 playwright-report
+
+# Tesseract.js worker and cores, copied from node_modules by scripts/copy-ocr-assets.mjs
+public/ocr/worker.min.js
+public/ocr/core/

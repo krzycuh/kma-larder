@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-ocr-assets.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/copy-ocr-assets.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "eslint . --fix",
@@ -28,6 +30,7 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^6.28.0",
     "recharts": "^2.15.4",
+    "tesseract.js": "^7.0.0",
     "zod": "^3.23.8",
     "zxing-wasm": "3.1.3"
   },
