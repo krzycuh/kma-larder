@@ -16,10 +16,10 @@ do `main`, który zmienia `backend/` lub `frontend/` (tag `main`), po opublikowa
 3. Utwórz katalogi danych: `(source .env.production && mkdir -p "$DATA_PATH/postgres" "$BACKUP_PATH" logs)`.
 4. Zaloguj się do GHCR: `echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin`.
 5. `docker compose -f docker-compose.prod.yml --env-file .env.production up -d`.
-   Aplikacja jest dostępna na `http://<pi>:8020` (port zmienisz przez `FRONTEND_PORT`). Backend nie publikuje portu:
+   Aplikacja jest dostępna na `http://<pi>:8030` (port zmienisz przez `FRONTEND_PORT`). Backend nie publikuje portu:
    `/api` przechodzi przez nginx w kontenerze frontendu do `backend:8080` w sieci compose.
 6. Zaloguj się jako `admin@example.com` / `admin123` i **od razu zmień hasło** (Profil → Zmiana hasła).
-7. HTTPS: patrz [docs/adr/002-https.md](docs/adr/002-https.md) (wymagane pod skaner kodów w fazie 7). Terminator TLS kieruje ruch na port 8020.
+7. HTTPS: patrz [docs/adr/002-https.md](docs/adr/002-https.md) (wymagane pod aparat: skaner kodów i OCR dat). Terminator TLS kieruje ruch na port 8030.
 
 ## Aktualizacja do nowej wersji
 

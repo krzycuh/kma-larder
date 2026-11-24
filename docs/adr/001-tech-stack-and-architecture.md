@@ -1,60 +1,61 @@
 # ADR 001: Stack technologiczny i architektura
 
 **Status:** Zaakceptowany
-**Data:** 2026-10-22
+**Data:** 2026-11-24
 
 ## Kontekst
 
-KMA Library to druga aplikacja domowa po [kma-poker-stats](https://github.com/krzycuh/kma-poker-stats). Ma działać na tym samym Raspberry Pi, być utrzymywana przez tę samą osobę i korzystać z tych samych narzędzi, żeby wiedza, skrypty i pipeline'y przenosiły się 1:1. Model danych musi być na tyle modularny, by biblioteczka mogła w przyszłości stać się wspólna (rodzinna), a lista przeczytanych pozostała osobista; katalog książek musi dać się później zasilać z zewnętrznych źródeł (ISBN, Open Library, skaner).
+KMA Larder to trzecia aplikacja domowa po [kma-poker-stats](https://github.com/krzycuh/kma-poker-stats) i [kma-library](https://github.com/krzycuh/kma-library). Ma działać na tym samym Raspberry Pi, być utrzymywana przez tę samą osobę i korzystać z tych samych narzędzi, żeby wiedza, skrypty i pipeline'y przenosiły się 1:1. Sednem aplikacji jest sygnalizacja świeżości zapasów i szybkie wprowadzanie produktów z telefonu (skaner kodów, OCR dat).
 
 ## Decyzja
 
-### Stack identyczny z poker-stats
+### Stack identyczny z kma-library
 
-- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + TanStack Query + React Hook Form + Zod + react-router; Vitest + Testing Library; PWA.
-- **Backend:** Kotlin + Spring Boot 3.x (Web, Security, Validation, Data JPA, Actuator), JWT (access + refresh), Flyway, springdoc-openapi, bucket4j; JUnit 5 + MockK + Kotest + Testcontainers + ArchUnit; Gradle Kotlin DSL, JDK 21, ktlint.
+- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + TanStack Query + React Hook Form + Zod + react-router; Vitest + Testing Library; Playwright; PWA. Dodatkowo: `tesseract.js` (OCR), `barcode-detector` + `zxing-wasm` (kody).
+- **Backend:** Kotlin + Spring Boot 3.x (Web, Security, Validation, Data JPA, Actuator), JWT (access + refresh), Flyway, springdoc-openapi, bucket4j, `@EnableScheduling`; JUnit 5 + MockK + ArchUnit + MockWebServer; Gradle Kotlin DSL, JDK 21, ktlint.
 - **Baza:** PostgreSQL 16.
-- **Infra:** Docker multi-stage + `Dockerfile.prebuilt`, docker-compose (`localhost`, `prod`), nginx wbudowany w obraz frontendu (SPA + proxy `/api`), GitHub Actions (CI + obrazy do GHCR), Raspberry Pi z danymi na SSD.
+- **Infra:** Docker multi-stage + `Dockerfile.prebuilt`, docker-compose (`localhost`, `prod`), nginx wbudowany w obraz frontendu (SPA + proxy `/api`), GitHub Actions (CI + obrazy do GHCR), Raspberry Pi z danymi na SSD, port 8030.
 
-Uzasadnienie: zero kosztu nauki, możliwość kopiowania całych modułów (auth, layout, CI, deploy), spójne operacje (backup, aktualizacja) dla obu aplikacji.
+Uzasadnienie: zero kosztu nauki, kopiowanie całych modułów (auth, layout, CI, deploy, backup), spójne operacje dla trzech aplikacji. Trzecia kopia szkieletu oznacza rozjazd między aplikacjami (poprawka w jednej nie trafia do pozostałych); akceptujemy to świadomie zamiast wydzielać wspólną bibliotekę, której utrzymanie kosztowałoby więcej niż trzy kopie.
 
-### Odstępstwa od poker-stats
+### Odstępstwa od kma-library
 
-| Element | poker-stats | kma-library | Powód |
-|---------|-------------|-------------|-------|
-| Redis | tak (cache statystyk) | **nie w MVP**; `spring-boot-starter-cache` z `ConcurrentMapCacheManager` | brak kosztownych agregacji; mniej RAM na Pi; przełączenie na Redis to zmiana konfiguracji |
-| ntfy | tak (powiadomienie o rejestracji) | port `NotificationService` + `NoOp`; ntfy dopiero przy powiadomieniach o pożyczeniach | YAGNI |
-| Role | `CASUAL_PLAYER`/`ADMIN` | `USER`/`ADMIN` | nazewnictwo domeny |
-| Pakiet | `pl.kmazurek` | `pl.kmazurek.library` | unikanie kolizji przy pracy w obu projektach |
-| Java w CI | 17 (niespójne z toolchain 21) | 21 | poprawka błędu |
-| Node | 18 | 20 LTS | wsparcie |
-| nginx | osobny kontener reverse proxy przed frontendem i backendem | tylko nginx w obrazie frontendu; backend bez publikowanego portu, aplikacja na porcie 8020 | jedna aplikacja na Pi, o jeden kontener i jeden config mniej; TLS i tak terminowany przed aplikacją (ADR 002) |
+| Element | kma-library | kma-larder | Powód |
+|---------|-------------|------------|-------|
+| Wspólny katalog | `Book` współdzielony między użytkownikami, scalanie duplikatów przez admina | `Product` należy do spiżarni | gospodarstwo ma własne nazwy („Ogórki babci”); bez katalogu nie ma polityki edycji ani scalania |
+| Katalogi zewnętrzne | łańcuch trzech providerów ISBN | jeden `ProductMetadataProvider` (Open Food Facts) | wystarcza; to tylko podpowiedź nazwy |
+| OCR | brak | w przeglądarce, bez udziału backendu | ADR 003 |
+| Powiadomienia | `NoOp` | ntfy + tygodniowy raport z `@Scheduled` | ntfy już działa na Pi; „zużywać na czas” wymaga przypomnienia |
+| Zegar | `LocalDate.now()` | bean `Clock` (Europe/Warsaw) w use case'ach | terminy liczone w dniu gospodarstwa, testy z zegarem stałym |
+| Listowanie | paginacja w SQL | sortowanie i stronicowanie w pamięci dla listy produktów | kilkaset produktów, sortowanie po zagregowanym terminie; prościej niż podzapytania w JPQL |
+| Nazwy | `Library`, `ShelfItem`, `Loan` | `Pantry`, `Product`, `Batch`, `StockMovement` | domena |
+| Motyw | niebieski / neon | terakota / piwnica, zielony-bursztynowy-czerwony tylko dla świeżości | patrz niżej |
 
-### Architektura: DDD + Clean Architecture, cztery bounded contexts
+### Architektura: DDD + Clean Architecture, trzy bounded contexts
 
 ```
-pl.kmazurek.library
-├── domain/            # czysty Kotlin: model/{user,catalog,reading,shelf,shared}, repository/, service/
-├── application/       # usecase/{auth,user,catalog,reading,shelf}, dto/, service/ (porty: BookMetadataProvider, NotificationService)
-├── infrastructure/    # persistence/ (JPA entity + mapper + impl), api/rest/, security/, catalog/ (providery), notification/
+pl.kmazurek.larder
+├── domain/            # model/{user,pantry,stock}, repository/, service/PantryAccessPolicy
+├── application/       # usecase/{auth,user,pantry,stock,notification}, dto/, service/ (porty: ProductMetadataProvider, NotificationService)
+├── infrastructure/    # persistence/, api/rest/, security/, catalog/ (Open Food Facts), notification/ (ntfy)
 └── config/
 ```
 
 Kluczowe decyzje modelu:
 
-1. **Catalog jest współdzielony i niezależny.** `Book` nie zna użytkowników. Reading i Shelf odwołują się do `BookId`. Integracje zewnętrzne (ISBN, Open Library, skaner) to wyłącznie port `BookMetadataProvider` i jego implementacje w `infrastructure/catalog`.
-2. **Shelf jest własnością `Library`, nie użytkownika.** `ShelfItem.libraryId` zamiast `userId`; `LibraryMember` z rolą. W MVP jedna biblioteczka na użytkownika tworzona przy rejestracji. Biblioteczka rodzinna = dodanie członków, bez zmiany schematu pozycji i pożyczeń. Dostęp sprawdzany w jednym miejscu: `LibraryAccessPolicy`.
-3. **Reading jest osobiste.** `ReadingEntry.readerId = UserId` wprost; żadnego współdzielenia bez świadomej decyzji w przyszłości.
-4. **`ShelfItem` to egzemplarz, `Loan` żyje w jego agregacie.** Niezmiennik "jedno aktywne pożyczenie" jest zarówno w domenie, jak i w częściowym indeksie unikalnym w bazie.
-5. **Pełny schemat w `V1`.** Wszystkie tabele MVP w jednej migracji; kolejne migracje tylko dla rozszerzeń (statusy czytania, członkowie).
-6. **`Isbn` jako value object** z walidacją i normalizacją do ISBN-13 od fazy 2, mimo że pole jest opcjonalne; dzięki temu faza 6 nie zmienia modelu.
+1. **Produkt opisuje, partia liczy.** `Product` to słownik spiżarni (nazwa, rodzaj, kategoria, kod, opakowanie, przydatność, minimum). Sztuki są w `Batch` z jedną datą. Stan = suma partii; status świeżości produktu = najgorszy z partii.
+2. **Data z taką precyzją, jaką ma opakowanie.** `ApproximateDate(year, month?, day?)` zamiast `LocalDate`; porównania po ostatnim dniu okresu. `expiresOn` jest zapisywany w partii, żeby SQL sortował i filtrował.
+3. **Domowe przetwory: data zrobienia + przydatność produktu.** Termin wynika z `producedOn.plusMonths(defaultShelfLifeMonths)`; zmiana przydatności przelicza partie z datą wyliczoną, nie rusza dat z opakowania.
+4. **Historia jako zdarzenia.** `StockMovement` (dodano / zużyto / wyrzucono / korekta) zamiast licznika: odpowiada na „ile słoików rocznie”, czyli ile zrobić w przyszłym roku.
+5. **Pełny schemat w `V1`.** Kolejne migracje tylko dla rozszerzeń.
+6. **Dostęp w jednym miejscu.** `PantryAccessPolicy` + `PantryAccessGuard`; każdy use case stocku ładuje produkt / partię przez `StockAccess`, które sprawdza członkostwo.
 
-### Testowanie
+### Kolory
 
-Jak w poker-stats: TDD dla domeny i use case'ów, ArchUnit pilnuje warstw, Testcontainers dla REST, Vitest dla frontu, Playwright dla ścieżek krytycznych w fazie 5.
+Zielony, bursztynowy i czerwony są zarezerwowane dla statusu świeżości (w porządku / kończy się / po terminie) **w obu motywach**, bo to jest sedno aplikacji. Akcent (w klasach Tailwinda nadal `blue-*`, przez zmienne CSS) to terakota; neutralne są ciepłe (stone, krem zamiast bieli). Ciemny motyw „piwnica” to brązy z bursztynowym blaskiem, nie neon. Mechanizm z kma-library (`theme.css` + `tailwind.config.js`) skopiowany bez zmian, mapowanie kolorów od nowa.
 
 ## Konsekwencje
 
-- Plus: szybki start (faza 0–1 to głównie kopiowanie), jeden sposób utrzymania obu aplikacji, model gotowy na rodzinę i katalogi zewnętrzne bez przebudowy.
-- Minus: Spring Boot na Pi obok poker-stats to drugi JVM (~400–600 MB RAM); trzeba pilnować `JAVA_OPTS` i rozważyć wspólnego Postgresa dla obu aplikacji (osobne bazy) w przyszłości.
-- Minus: współdzielony katalog wymaga polityki edycji (twórca/admin) i narzędzia do scalania duplikatów (faza 6).
+- Plus: szybki start, jedna metoda utrzymania trzech aplikacji, model gotowy na lokalizacje i statystyki bez przebudowy.
+- Minus: trzeci JVM na Pi (~400–600 MB RAM). Przy trzech stosach warto zmierzyć `docker stats` i rozważyć wspólnego Postgresa (osobne bazy).
+- Minus: brak wspólnego katalogu produktów oznacza, że ta sama puszka w dwóch spiżarniach to dwa produkty. Dla jednego gospodarstwa bez znaczenia.

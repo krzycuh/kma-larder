@@ -1,20 +1,22 @@
 # KMA Larder
 
-Aplikacja webowa (mobile-first, PWA) do prowadzenia rejestru przeczytanych książek i domowej biblioteczki z ewidencją pożyczeń. Techniczny bliźniak [kma-poker-stats](https://github.com/krzycuh/kma-poker-stats): ten sam stack, te same konwencje i sposób wdrożenia.
+Aplikacja webowa (mobile-first, PWA) do śledzenia domowej spiżarni: ile czego jest i kiedy kończy się termin ważności, żeby zużywać na czas i uzupełniać zapasy. Techniczny bliźniak [kma-library](https://github.com/krzycuh/kma-library): ten sam stack, te same konwencje i sposób wdrożenia.
 
 ## Funkcje
 
-- **Przeczytane** – tytuł, autor, rok i opcjonalnie miesiąc przeczytania, ocena 1–5, notatka, opcjonalnie wersja (papierowa / e-book / audiobook, bez wpływu na statystyki); lista z filtrami (rok, ocena, szukaj) i podsumowaniem roku.
-- **Statystyki** – książki w kolejnych latach i miesiącach, pory roku, rozkład ocen, przeczytane strony i najgrubsza książka, najczęściej czytani autorzy; dla wszystkich lat lub wybranego roku.
-- **Liczba stron** – z katalogów przy imporcie po ISBN lub ręcznie; książki bez liczby stron są douzupełniane w tle po starcie aplikacji (po ISBN, a bez ISBN po tytule i autorze), z przebiegiem w logach.
-- **Biblioteczka** – egzemplarze na półce, status (na półce / pożyczona / zgubiona / oddana), pożyczenie komuś (imię i nazwisko, data, termin), zwrot, historia pożyczeń, lista dłużników z zaznaczeniem przeterminowanych.
-- **Katalog książek** – wspólny słownik tytułów (deduplikacja po ISBN lub po znormalizowanym tytule i autorze), autouzupełnianie przy dodawaniu, karta książki łącząca czytania i egzemplarze.
-- **Konta** – rejestracja (wyłączalna flagą), logowanie JWT z refresh tokenem, profil, panel admina (blokada konta, reset hasła, podgląd konta użytkownika – admin widzi aplikację tak, jak widzi ją dany użytkownik, tylko do odczytu).
-- **W planach** (fazy 6–8): ISBN + Open Library, skaner kodów kreskowych, biblioteczka rodzinna.
+- **Stan** – produkty spiżarni (kupne i domowe) z liczbą sztuk, kategorią, wielkością opakowania; filtry i sortowanie po nazwie, terminie, ilości.
+- **Partie** – sztuki tego samego produktu z tą samą datą: termin „najlepiej spożyć przed” z opakowania (sam rok, miesiąc i rok albo pełna data) albo data zrobienia przetworów, z której termin wynika z przydatności produktu. Zużyj 1 / zużyj kilka / wyrzuć / popraw stan jednym tapnięciem.
+- **Terminy** – wszystkie partie od najpilniejszej: po terminie, kończy się (domyślnie 30 dni), w porządku, bez terminu.
+- **Do uzupełnienia** – lista zakupów z produktów poniżej minimalnego zapasu.
+- **Historia** – każda zmiana (dodano, zużyto, wyrzucono, korekta) z osobą i datą; zużycie roczne na karcie produktu („ile słoików dżemu schodzi w roku”).
+- **Dodawanie** – autouzupełnianie z własnych produktów, skaner kodów EAN z podpowiedzią nazwy z Open Food Facts, **OCR daty ważności ze zdjęcia** (w telefonie, bez wysyłania zdjęcia), duże przyciski ilości.
+- **Powiadomienia** – tygodniowy raport na ntfy: co po terminie, co kończy się wkrótce, czego brakuje.
+- **Domownicy** – spiżarnia wspólna dla gospodarstwa: właściciel dodaje domowników po e-mailu.
+- **Konta** – rejestracja (wyłączalna flagą), logowanie JWT z refresh tokenem, profil, panel admina (blokada konta, reset hasła, podgląd konta użytkownika tylko do odczytu).
 
 ## Stack
 
-- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + TanStack Query + React Hook Form + Zod; Vitest, Playwright; PWA
+- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + TanStack Query + React Hook Form + Zod; Tesseract.js (OCR w przeglądarce), ZXing-WASM / BarcodeDetector (kody kreskowe); Vitest, Playwright; PWA
 - **Backend:** Kotlin + Spring Boot 3 + Spring Security (JWT) + Spring Data JPA + Flyway; JUnit 5 + MockK + ArchUnit; ktlint
 - **Baza:** PostgreSQL 16
 - **Infra:** Docker + Docker Compose (nginx wbudowany w obraz frontendu serwuje SPA i proxy'uje `/api`) + GitHub Actions (obrazy w GHCR), produkcja na Raspberry Pi
@@ -24,8 +26,8 @@ Aplikacja webowa (mobile-first, PWA) do prowadzenia rejestru przeczytanych ksią
 ```
 kma-larder/
 ├── backend/     # Kotlin + Spring Boot (pakiet pl.kmazurek.larder: domain / application / infrastructure / config)
-├── frontend/    # React + TypeScript (src/pages, components, api, types, i18n)
-├── docs/        # plan, projekt funkcjonalny, ADR, podsumowania faz
+├── frontend/    # React + TypeScript (src/pages, components, api, types, lib/ocr, i18n)
+├── docs/        # projekt funkcjonalny, plan, ADR, podsumowania faz
 ├── scripts/     # backup / restore / admin
 └── .github/workflows/
 ```
@@ -50,15 +52,15 @@ cd frontend && npm run test:e2e              # Playwright, wymaga działającego
 
 ## Wdrożenie
 
-Produkcja to trzy kontenery: PostgreSQL, backend (bez publikowanego portu) i frontend wystawiony na porcie 8020 (`FRONTEND_PORT`), którego nginx serwuje SPA i proxy'uje `/api` do backendu. Zobacz [prod-deploy.md](prod-deploy.md) oraz [ADR 002 – HTTPS](docs/adr/002-https.md).
+Produkcja to trzy kontenery: PostgreSQL, backend (bez publikowanego portu) i frontend wystawiony na porcie 8030 (`FRONTEND_PORT`), którego nginx serwuje SPA i proxy'uje `/api` do backendu. Aparat (skaner, OCR) wymaga HTTPS. Zobacz [prod-deploy.md](prod-deploy.md), [ADR 002 – HTTPS](docs/adr/002-https.md) i [docs/NTFY_NOTIFICATIONS.md](docs/NTFY_NOTIFICATIONS.md).
 
 ## Dokumentacja
 
-- [Plan implementacji](docs/IMPLEMENTATION_PLAN.md) – fazy 0–8 i podjęte decyzje
 - [Projekt funkcjonalny i model domeny](docs/FUNCTIONALITY_DESIGN.md)
-- [ADR 001 – stack i architektura](docs/adr/001-tech-stack-and-architecture.md), [ADR 002 – HTTPS](docs/adr/002-https.md)
+- [Plan implementacji](docs/IMPLEMENTATION_PLAN.md) – fazy 0–5 i podjęte decyzje
+- [ADR 001 – stack i architektura](docs/adr/001-tech-stack-and-architecture.md), [ADR 002 – HTTPS](docs/adr/002-https.md), [ADR 003 – OCR w przeglądarce](docs/adr/003-ocr-in-browser.md)
 - [Podsumowanie faz 0–5](docs/PHASE_0-5_SUMMARY.md)
 
 ## Status
 
-Fazy 0–5 zrealizowane: działające MVP (auth, przeczytane, biblioteczka, pożyczenia, dashboard, PWA, CI, konfiguracja wdrożenia).
+Fazy 0–5 zrealizowane: działające MVP (auth, stan, partie, terminy, lista zakupów, skaner EAN + Open Food Facts, OCR dat, raport ntfy, domownicy, PWA, CI, konfiguracja wdrożenia).

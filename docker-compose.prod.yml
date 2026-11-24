@@ -79,7 +79,7 @@ services:
     container_name: kmalarder-frontend-prod
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-8020}:80"
+      - "${FRONTEND_PORT:-8030}:80"
     depends_on:
       backend:
         condition: service_healthy

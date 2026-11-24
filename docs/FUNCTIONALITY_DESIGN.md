@@ -1,11 +1,11 @@
-# KMA Library – projekt funkcjonalny i model domeny
+# KMA Larder – projekt funkcjonalny i model domeny
 
-Aplikacja webowa (mobile-first, PWA) do zarządzania:
+Aplikacja webowa (mobile-first, PWA) do śledzenia domowej spiżarni. Dwa cele:
 
-1. **Przeczytanymi książkami** – co przeczytałem, kiedy, jak mi się podobało.
-2. **Biblioteczką** – jakie książki mam na półce i komu je pożyczyłem.
+1. **Wiedzieć, ile czego jest** – słoiki przetworów, miód, mąki, makarony, konserwy, woda.
+2. **Wiedzieć, kiedy kończy się termin ważności** – żeby zużywać na czas i uzupełniać zapasy.
 
-Oba zbiory są niezależne (mogą, ale nie muszą się pokrywać). W pierwszej wersji każdy użytkownik ma własny zbiór przeczytanych książek i własną biblioteczkę. Model jest zaprojektowany tak, żeby w przyszłości biblioteczka mogła być **wspólna (rodzinna)**, a lista przeczytanych pozostała **osobista**.
+Spiżarnia jest z natury wspólna dla gospodarstwa: jedna spiżarnia, kilkoro domowników z tym samym widokiem.
 
 ---
 
@@ -13,279 +13,151 @@ Oba zbiory są niezależne (mogą, ale nie muszą się pokrywać). W pierwszej w
 
 | Rola | Uprawnienia |
 |------|-------------|
-| `USER` | Własny rejestr przeczytanych, własna biblioteczka, pożyczenia, edycja profilu |
-| `ADMIN` | To co `USER` + zarządzanie użytkownikami (lista, blokowanie, reset hasła), edycja/scalanie wpisów katalogu |
+| `USER` | Własna spiżarnia (tworzona przy rejestracji) i spiżarnie, do których został dodany; produkty, partie, zużycie, lista zakupów |
+| `ADMIN` | To co `USER` + zarządzanie użytkownikami (lista, blokowanie, reset hasła, podgląd konta), ręczne wysłanie raportu ntfy |
 
-Rejestracja: otwarta (jak w poker-stats, z rate-limitingiem), z możliwością wyłączenia flagą konfiguracyjną `app.registration.enabled`.
+Rejestracja: otwarta (z rate-limitingiem w nginx), z możliwością wyłączenia flagą `app.registration.enabled` po założeniu kont domownikom.
 
 ---
 
 ## 2. Bounded contexts
 
 ```
-┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
-│  Identity & Access   │  │   Catalog            │  │   Reading            │  │   Shelf              │
-│                      │  │   (katalog książek)  │  │   (przeczytane)      │  │   (biblioteczka)     │
-│  - User              │  │  - Book              │  │  - ReadingEntry      │  │  - Library           │
-│  - UserRole          │  │  - Isbn              │  │  - Rating            │  │  - LibraryMember     │
-│  - JWT / refresh     │  │  - BookMetadata      │  │                      │  │  - ShelfItem (copy)  │
-│                      │  │    Provider (port)   │  │                      │  │  - Loan              │
-└──────────────────────┘  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘
+┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────────────┐
+│  Identity & Access   │  │   Pantry             │  │   Stock                      │
+│                      │  │   (spiżarnia)        │  │   (zapasy)                   │
+│  - User              │  │  - Pantry            │  │  - Product                   │
+│  - UserRole          │  │  - PantryMember      │  │  - Batch (partia)            │
+│  - JWT / refresh     │  │  - PantryAccessPolicy│  │  - StockMovement (historia)  │
+│                      │  │                      │  │  - ApproximateDate, Freshness│
+└──────────────────────┘  └──────────────────────┘  └──────────────────────────────┘
+                                                      porty: ProductMetadataProvider (EAN),
+                                                             NotificationService (ntfy)
 ```
 
 Zasady:
 
-- **Catalog** jest wspólnym słownikiem książek (tytuł, autor, ISBN, okładka). Nie wie nic o tym, kto co przeczytał ani kto co ma. Dzięki temu integracja z katalogiem publicznym (ISBN, Open Library) dotyka tylko tego kontekstu.
-- **Reading** i **Shelf** odwołują się do książki wyłącznie przez `BookId`. Nie mają między sobą zależności.
-- **Shelf** nie odwołuje się do `UserId` bezpośrednio przy pozycjach na półce, tylko przez `LibraryId`. Biblioteczka ma właściciela i członków. W MVP każda biblioteczka ma dokładnie jednego członka (właściciela) i jest tworzona automatycznie przy rejestracji. Wariant rodzinny to wyłącznie dodanie członków, bez zmiany schematu pozycji i pożyczeń.
-- **Reading** odwołuje się bezpośrednio do `UserId` (czytelnik), bo to zbiór z założenia osobisty.
+- **Pantry** to gospodarstwo: właściciel i domownicy. Każdy użytkownik dostaje własną spiżarnię przy rejestracji; domownik dołącza do cudzej po e-mailu. Dostęp sprawdzany w jednym miejscu: `PantryAccessPolicy`.
+- **Stock** należy do spiżarni (`Product.pantryId`, `Batch.pantryId`). Produkt jest słownikiem **jednej spiżarni**, nie wspólnym katalogiem wszystkich użytkowników: nie ma scalania duplikatów między gospodarstwami, a „Ogórki kiszone” u sąsiada to inny produkt.
+- Integracje zewnętrzne to wyłącznie porty w warstwie aplikacji: `ProductMetadataProvider` (Open Food Facts) i `NotificationService` (ntfy). OCR nie ma w backendzie w ogóle – działa w przeglądarce (ADR 003).
 
 ---
 
 ## 3. Model domeny (Kotlin, warstwa `domain`)
 
-### 3.1 Identity & Access (kopiowane z poker-stats)
+### 3.1 Pantry
 
-- `User(id: UserId, email: Email, passwordHash: HashedPassword, name: String, role: UserRole, createdAt, updatedAt)`
-- `UserRole { USER, ADMIN }`
+- `Pantry(id, name, ownerId, createdAt, updatedAt)`, `PantryMember(pantryId, userId, role: OWNER | MEMBER)`.
+- Każdy członek: produkty, partie, zużycie, listy. Właściciel dodatkowo: domownicy i nazwa. Właściciela nie da się usunąć.
 
-### 3.2 Catalog
-
-```kotlin
-data class Book(
-    val id: BookId,
-    val title: BookTitle,            // VO: niepuste, max 500 znaków
-    val authors: List<AuthorName>,   // VO: min 1 autor; w UI jedno pole "Autor" rozdzielane przecinkiem/";"
-    val isbn: Isbn? = null,          // VO: ISBN-10/13, normalizowany do 13, walidacja sumy kontrolnej
-    val publishedYear: Int? = null,
-    val coverUrl: String? = null,
-    val pageCount: Int? = null,      // przybliżona: jedna wartość na tytuł, niezależnie od wydania
-    val source: BookSource,          // MANUAL | OPEN_LIBRARY | GOOGLE_BOOKS ...
-    val externalId: String? = null,  // id w katalogu zewnętrznym
-    val createdByUserId: UserId,
-    val createdAt, val updatedAt,
-)
-```
-
-- Książka jest **współdzielona** między użytkownikami (jeden rekord "Lem – Solaris" dla wszystkich).
-- Deduplikacja: przy dodawaniu use case `FindOrCreateBook` szuka po ISBN, a gdy brak ISBN – po znormalizowanym `title + authors` (lower-case, bez znaków diakrytycznych i interpunkcji). Jeśli znajdzie, zwraca istniejącą.
-- Edycja wpisu katalogu: twórca lub `ADMIN`. Scalanie duplikatów: `ADMIN` (faza 6+).
-- Port: `interface BookMetadataProvider { fun findByIsbn(isbn: Isbn): BookMetadata? ; fun search(query: String): List<BookMetadata> }` – w MVP implementacja `NoOpBookMetadataProvider`, w fazie 6 `OpenLibraryBookMetadataProvider`.
-
-### 3.3 Reading (przeczytane)
+### 3.2 Stock
 
 ```kotlin
-data class ReadingEntry(
-    val id: ReadingEntryId,
-    val readerId: UserId,
-    val bookId: BookId,
-    val finishedOn: FinishedPeriod?,       // null = "nie pamiętam kiedy"; FinishedPeriod(year, month?) – bez dnia
-    val rating: Rating? = null,            // VO: 1..5
-    val review: String? = null,            // krótka notatka
-    val format: ReadingFormat? = null,     // PAPER / EBOOK / AUDIOBOOK; null = nie podano (tylko do wyświetlania, poza statystykami)
-    val createdAt, val updatedAt,
-)
-```
-
-- Jedna książka może mieć wiele wpisów u jednego czytelnika (ponowne czytanie).
-- Niezmienniki: `finishedOn` nie może być z przyszłości; `rating` w zakresie 1..5; miesiąc wymaga roku.
-- Status "w trakcie czytania" / "chcę przeczytać" **nie** jest w MVP, ale pole `status: ReadingStatus { FINISHED }` jest przygotowane jako enum, żeby dodać `IN_PROGRESS`, `WANT_TO_READ`, `ABANDONED` bez migracji modelu domenowego (migracja SQL: tylko nowe wartości).
-
-### 3.4 Shelf (biblioteczka)
-
-```kotlin
-data class Library(                       // aggregate root
-    val id: LibraryId,
-    val name: String,                     // "Biblioteczka Krzyśka"
-    val ownerId: UserId,
-    val createdAt, val updatedAt,
-)
-
-data class LibraryMember(                 // MVP: zawsze 1 wiersz = właściciel
-    val libraryId: LibraryId,
-    val userId: UserId,
-    val role: LibraryRole,                // OWNER | MEMBER
-)
-
-data class ShelfItem(                     // aggregate root – fizyczny egzemplarz na półce
-    val id: ShelfItemId,
-    val libraryId: LibraryId,
-    val bookId: BookId,
-    val acquiredOn: LocalDate? = null,
+data class Product(
+    val id: ProductId,
+    val pantryId: PantryId,
+    val name: ProductName,               // VO: trim, zbite spacje; normalized = lowercase bez diakrytyków i interpunkcji (deduplikacja)
+    val kind: ProductKind,               // STORE_BOUGHT (termin z opakowania) | HOMEMADE (data zrobienia + przydatność)
+    val category: ProductCategory,       // PRESERVES, HONEY, FLOUR_GRAINS, PASTA_RICE, CANNED, BEVERAGES, OILS_SAUCES, SWEETS_SNACKS, SPICES_BAKING, DRIED, FROZEN, OTHER
+    val barcode: Barcode? = null,        // VO: EAN-13 / EAN-8 / UPC-A (jako EAN-13), walidacja cyfry kontrolnej; unikalny w spiżarni
+    val packageSize: String? = null,     // "0,9 l", "400 g" – opis, nie liczba
+    val defaultShelfLifeMonths: Int?,    // przydatność domowych przetworów od daty zrobienia
+    val minQuantity: Int = 0,            // poniżej tej liczby produkt trafia na listę zakupów; 0 = bez minimum
     val notes: String? = null,
-    val status: ShelfItemStatus,          // ON_SHELF | LENT | LOST | GIVEN_AWAY
-    val createdAt, val updatedAt,
+    val archived: Boolean = false,       // znika z list, historia zostaje
+    ...
 )
 
-data class Loan(                          // entity wewnątrz agregatu ShelfItem
-    val id: LoanId,
-    val shelfItemId: ShelfItemId,
-    val borrower: BorrowerName,           // VO: firstName + lastName (niepuste)
-    val lentOn: LocalDate,
-    val dueOn: LocalDate? = null,
-    val returnedOn: LocalDate? = null,
+data class Batch(                        // partia: sztuki tego samego produktu z tą samą datą
+    val id: BatchId,
+    val pantryId: PantryId,
+    val productId: ProductId,
+    val quantity: Int,                   // >= 0; partia z zerem zostaje jako historia, aż ktoś ją usunie
+    val bestBefore: ApproximateDate?,    // z opakowania
+    val producedOn: ApproximateDate?,    // przetwory
+    val expiresOn: LocalDate?,           // ostatni dzień okresu: bestBefore, a bez niego producedOn + przydatność produktu; zapisywany
+    val location: String? = null,        // "piwnica", "zamrażarka"
     val notes: String? = null,
+    val addedOn: LocalDate,
+    ...
+)
+
+data class StockMovement(                // każda zmiana ilości, na zawsze
+    val id: StockMovementId,
+    val pantryId: PantryId, val productId: ProductId, val batchId: BatchId?,
+    val type: MovementType,              // ADDED (+), CONSUMED (−), DISCARDED (−), ADJUSTED (±)
+    val quantity: Int,                   // zmiana ze znakiem
+    val occurredOn: LocalDate,
+    val userId: UserId?,
 )
 ```
 
-Niezmienniki agregatu `ShelfItem`:
+Value objects:
 
-- Co najwyżej **jedno aktywne pożyczenie** (`returnedOn == null`) na egzemplarz.
-- `lendTo(borrower, lentOn)` dozwolone tylko gdy `status == ON_SHELF`; ustawia `status = LENT`.
-- `markReturned(returnedOn)` wymaga aktywnego pożyczenia, `returnedOn >= lentOn`; ustawia `status = ON_SHELF`.
-- Historia pożyczeń jest zachowywana (lista `loans`), co daje "komu kiedyś pożyczałem tę książkę".
-- Ta sama książka może występować jako kilka egzemplarzy (dwa `ShelfItem` z tym samym `bookId`).
+- **`ApproximateDate(year, month?, day?)`** – data tak, jak jest nadrukowana: sam rok („2027”), miesiąc i rok („05.2027”) albo pełna data. Do porównań czytana jako **ostatni dzień okresu** (`endDate`): „2027” to 31.12.2027, „05.2027” to 31.05.2027. `plusMonths(n)` zachowuje precyzję: „2026” + 12 = „2027”, „06.2026” + 12 = „06.2027”.
+- **`Freshness`** – polityka statusu: `EXPIRED` (koniec okresu przed dziś), `EXPIRING_SOON` (do N dni, domyślnie 30), `OK`, `UNKNOWN` (bez daty). `worst(...)` dla produktu z wieloma partiami.
+- **`Barcode`**, **`ProductName`** – jak wyżej.
 
-Autoryzacja: operacja na `ShelfItem` wymaga, by aktualny użytkownik był członkiem `Library` (`LibraryAccessPolicy` w warstwie domain/service). W MVP sprowadza się to do `library.ownerId == currentUser`, ale punkt rozszerzenia jest jeden.
+Niezmienniki:
+
+- Ilość partii nigdy nie spada poniżej zera; `take(n)` z n > quantity to błąd (HTTP 409).
+- Nowa partia ma co najmniej jedną sztukę. Każde dodanie tworzy ruch `ADDED`, zużycie `CONSUMED`, wyrzucenie `DISCARDED`; korekta stanu (`adjustTo`) zapisuje tylko różnicę jako `ADJUSTED`.
+- Zmiana przydatności produktu przelicza `expiresOn` partii z datą wyliczoną; daty z opakowania nie rusza.
+- Nazwa (po normalizacji) i kod kreskowy są unikalne w obrębie spiżarni.
+
+Autoryzacja: każda operacja wymaga członkostwa w spiżarni produktu / partii (`PantryAccessGuard` → `PantryAccessPolicy`).
 
 ---
 
 ## 4. Historyjki użytkownika (MVP)
 
-**Auth**
-- Jako nowy użytkownik rejestruję się e-mailem i hasłem i od razu mam pustą biblioteczkę.
-- Jako użytkownik loguję się i pozostaję zalogowany (refresh token) na telefonie.
+**Dodawanie**
+- Wpisuję nazwę: podpowiedź z moich produktów (bez diakrytyków, „ogor” znajduje „Ogórki kiszone”) albo nowy produkt. Podaję ilość (duże −/+), datę z opakowania w tylu polach, ile widzę (rok / miesiąc / dzień), dla przetworów datę zrobienia.
+- Skanuję kod EAN: jeśli produkt z tym kodem już jest w spiżarni, zostaje wybrany; jeśli nie, nazwę i opakowanie podpowiada Open Food Facts.
+- Robię zdjęcie nadruku z datą: aplikacja rozpoznaje daty w telefonie i pokazuje je do wyboru. Nic nie zapisuje się bez mojego tapnięcia.
+- „Dodaj kolejny” zostawia mnie w formularzu, bo zwykle rozpakowuję całe zakupy.
 
-**Przeczytane**
-- Dodaję przeczytaną książkę podając tytuł i autora; opcjonalnie rok (i ewentualnie miesiąc) przeczytania, ocenę 1–5 i notatkę.
-- Przeglądam listę przeczytanych posortowaną po dacie; filtruję po roku i ocenie; wyszukuję po tytule/autorze.
-- Edytuję i usuwam wpis.
-- Widzę proste podsumowanie: liczba książek w tym roku, średnia ocena, najlepiej ocenione.
+**Stan i zużywanie**
+- Widzę listę produktów z liczbą sztuk i sygnalizacją świeżości; filtruję po kategorii i rodzaju, sortuję po nazwie, terminie, ilości.
+- Na karcie produktu widzę partie od najpilniejszej; „Zużyj 1” jednym tapnięciem, „Zużyj…” kilka, „Wyrzuć” z powodem (po terminie), „Popraw stan” po inwentaryzacji.
+- Widzę historię i ile sztuk zużyliśmy w tym i w poprzednim roku.
 
-**Biblioteczka**
-- Dodaję książkę na półkę (tytuł + autor, opcjonalnie data nabycia, notatka).
-- Przeglądam półkę; filtruję: wszystkie / na półce / pożyczone.
-- Pożyczam egzemplarz: imię i nazwisko, data (domyślnie dziś), opcjonalnie termin zwrotu.
-- Oznaczam zwrot. Widzę historię pożyczeń egzemplarza.
-- Widzę listę "aktualnie pożyczone" z nazwiskiem i datą (lista dłużników).
-- Z karty książki w biblioteczce jednym kliknięciem dodaję wpis "przeczytane" (i odwrotnie: z wpisu przeczytanego dodaję na półkę) – wspólny `BookId`.
+**Terminy i zakupy**
+- Na Starcie widzę: ile po terminie, ile kończy się w 30 dni, ile produktów do uzupełnienia, oraz listy „zużyć w pierwszej kolejności” i „brakuje”.
+- Zakładka Terminy: wszystkie / po terminie / 30 dni / 90 dni / bez terminu, z przyciskami zużycia na miejscu.
+- Zakładka Zakupy: produkty poniżej minimum z liczbą brakujących sztuk.
+- W niedzielę dostaję na telefon (ntfy) raport: po terminie, kończy się, do kupienia.
 
-**Admin**
-- Przeglądam użytkowników, blokuję konto, resetuję hasło (jak `AdminUserController` w poker-stats).
+**Domownicy**
+- Właściciel dodaje domownika po e-mailu (konto musi istnieć); domownik widzi tę samą spiżarnię i może zużywać i dodawać.
 
 ---
 
 ## 5. Schemat bazy (Flyway `V1__initial_schema.sql`)
 
-```sql
-users (id UUID PK, email UNIQUE, password_hash, name, role CHECK IN ('USER','ADMIN'), is_active, created_at, updated_at)
-
-books (
-  id UUID PK, title VARCHAR(500) NOT NULL, authors TEXT NOT NULL,          -- autorzy jako "A; B"
-  normalized_key VARCHAR(600) NOT NULL,                                     -- do deduplikacji (title+authors)
-  isbn13 CHAR(13) NULL, published_year INT NULL, cover_url VARCHAR(500), page_count INT NULL,
-  source VARCHAR(30) NOT NULL DEFAULT 'MANUAL', external_id VARCHAR(100),
-  created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at, updated_at
-)
-
-book_page_count_lookups (                                                   -- douzupełnianie liczby stron: jedna próba na książkę
-  book_id UUID PK REFERENCES books(id) ON DELETE CASCADE, attempted_at,
-  outcome VARCHAR(20) NOT NULL,                                             -- FOUND | NOT_FOUND | UNAVAILABLE (ponawiane przy kolejnym starcie)
-  query_kind VARCHAR(20), provider VARCHAR(30), page_count INT
-)
-UNIQUE INDEX ux_books_isbn13 ON books(isbn13) WHERE isbn13 IS NOT NULL
-INDEX idx_books_normalized_key ON books(normalized_key)
-INDEX idx_books_title_trgm ON books USING gin (title gin_trgm_ops)       -- pg_trgm do wyszukiwania
-
-reading_entries (
-  id UUID PK, reader_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  book_id UUID NOT NULL REFERENCES books(id),
-  status VARCHAR(20) NOT NULL DEFAULT 'FINISHED',
-  finished_year SMALLINT NULL, finished_month SMALLINT NULL CHECK (finished_month BETWEEN 1 AND 12),
-  rating SMALLINT NULL CHECK (rating BETWEEN 1 AND 5), review TEXT,
-  created_at, updated_at
-)
-INDEX idx_reading_entries_reader ON reading_entries(reader_id, finished_year DESC, finished_month DESC)
-
-libraries (id UUID PK, name VARCHAR(255) NOT NULL, owner_id UUID NOT NULL REFERENCES users(id), created_at, updated_at)
-
-library_members (library_id UUID REFERENCES libraries(id) ON DELETE CASCADE, user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                 role VARCHAR(20) NOT NULL, PRIMARY KEY (library_id, user_id))
-
-shelf_items (
-  id UUID PK, library_id UUID NOT NULL REFERENCES libraries(id) ON DELETE CASCADE,
-  book_id UUID NOT NULL REFERENCES books(id),
-  status VARCHAR(20) NOT NULL DEFAULT 'ON_SHELF', acquired_on DATE, notes TEXT,
-  created_at, updated_at
-)
-INDEX idx_shelf_items_library ON shelf_items(library_id, status)
-
-loans (
-  id UUID PK, shelf_item_id UUID NOT NULL REFERENCES shelf_items(id) ON DELETE CASCADE,
-  borrower_first_name VARCHAR(100) NOT NULL, borrower_last_name VARCHAR(100) NOT NULL,
-  lent_on DATE NOT NULL, due_on DATE, returned_on DATE, notes TEXT,
-  created_at, updated_at
-)
-UNIQUE INDEX ux_loans_active ON loans(shelf_item_id) WHERE returned_on IS NULL   -- jedno aktywne pożyczenie
-```
-
-Plus funkcja/trigger `update_updated_at_column()` jak w poker-stats oraz `V2__insert_admin_user.sql`.
+`users`, `pantries`, `pantry_members`, `products` (unikalne `(pantry_id, barcode)` i indeks na `normalized_name`, `pg_trgm` na nazwie), `batches` (daty jako `*_year / *_month / *_day` + `expires_on` z indeksem `(pantry_id, expires_on)`), `stock_movements` (`batch_id ON DELETE SET NULL`, `product_id ON DELETE CASCADE`). Usunięcie produktu usuwa partie i jego historię; archiwizacja ją zachowuje.
 
 ---
 
-## 6. API REST (prefix `/api`)
+## 6. REST API
 
 | Metoda | Ścieżka | Opis |
-|--------|---------|------|
-| POST | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` | jak w poker-stats |
-| GET/PUT | `/users/me`, `/users/me/password` | profil |
-| GET | `/books?search=` | wyszukiwanie w katalogu (autocomplete przy dodawaniu) |
-| POST | `/books` | find-or-create (tytuł, autor, opcjonalnie ISBN) |
-| GET/PUT | `/books/{id}` | szczegóły / edycja (twórca lub admin) |
-| GET | `/books/lookup?isbn=` | faza 6: metadane z katalogu zewnętrznego |
-| GET | `/reading-entries?year=&rating=&search=&bookId=&page=` | moje przeczytane |
-| POST | `/reading-entries` | `{ book: { bookId } | { title, authors, isbn? }, finishedYear?, finishedMonth?, rating?, review? }` |
-| GET/PUT/DELETE | `/reading-entries/{id}` | |
-| GET | `/reading-entries/summary?year=` | statystyki do dashboardu |
-| GET | `/reading-entries/statistics` | statystyki czytania: per rok (liczba, średnia ocena, miesiące, pory roku, rozkład ocen, strony, najgrubsza książka, najczęściej czytani autorzy) i łącznie |
-| GET | `/libraries` | moje biblioteczki (MVP: jedna) |
-| GET | `/libraries/{id}/items?status=&search=&bookId=&page=` | półka |
-| POST | `/libraries/{id}/items` | dodaj egzemplarz |
-| GET/PUT/DELETE | `/shelf-items/{id}` | |
-| POST | `/shelf-items/{id}/loans` | pożycz |
-| POST | `/shelf-items/{id}/return` | zwrot aktywnego pożyczenia |
-| GET | `/libraries/{id}/loans` | lista aktualnie pożyczonych |
-| GET | `/dashboard` | dane na stronę startową |
-| GET | `/admin/users`, PATCH `/admin/users/{id}/active`, PATCH `/admin/users/{id}/password` | admin |
+|---|---|---|
+| GET | `/api/pantries` | moje spiżarnie z rolą i liczbą domowników |
+| PATCH | `/api/pantries/{id}` | nazwa (właściciel) |
+| GET / POST / DELETE | `/api/pantries/{id}/members[/{userId}]` | domownicy |
+| GET | `/api/pantries/{id}/products?search&category&kind&includeArchived&sort&page&pageSize` | stan |
+| GET | `/api/pantries/{id}/products/search?q=` | autouzupełnianie |
+| GET | `/api/pantries/{id}/products/lookup?barcode=` | produkt ze spiżarni i/lub dane z Open Food Facts (400 / 404 / 503) |
+| POST | `/api/pantries/{id}/products` | nowy produkt (409 duplikat nazwy lub kodu) |
+| GET / PUT / DELETE | `/api/products/{id}` | karta produktu (partie, historia, zużycie roczne) / edycja / usunięcie |
+| POST | `/api/products/{id}/batches` | nowa partia |
+| PUT / DELETE | `/api/batches/{id}` | daty, miejsce, notatka / usunięcie |
+| POST | `/api/batches/{id}/consume` · `/discard` · `/adjust` | zużycie, wyrzucenie, korekta (409 za mało sztuk) |
+| GET | `/api/pantries/{id}/expiring?withinDays&expiredOnly&undatedOnly&soonDays` | terminy |
+| GET | `/api/pantries/{id}/replenishment` | lista zakupów |
+| GET | `/api/pantries/{id}/movements?productId&page&pageSize` | historia |
+| GET | `/api/pantries/{id}/dashboard?soonDays` | Start |
+| POST | `/api/admin/notifications/digest` | raport ntfy od ręki (admin) |
 
-Wszystkie listy paginowane przez `PagedResponse` (jak w poker-stats). Błędy przez `GlobalExceptionHandler` z mapowaniem wyjątków domenowych na 400/403/404/409.
-
----
-
-## 7. Frontend – ekrany (mobile-first)
-
-| Ścieżka | Ekran |
-|---------|-------|
-| `/login`, `/register` | kopiowane z poker-stats |
-| `/` | Dashboard: "przeczytane w tym roku", "pożyczone (N)", ostatnio dodane, skróty "+ przeczytana", "+ na półkę" |
-| `/read` | lista przeczytanych (karty: okładka/placeholder, tytuł, autor, data, gwiazdki); filtry rok/ocena; wyszukiwarka |
-| `/read/new`, `/read/:id/edit` | formularz: pole tytuł + autor z autouzupełnianiem z `/books?search=`, rok + opcjonalny miesiąc, ocena gwiazdkami, notatka |
-| `/stats?year=` | statystyki czytania: wybór okresu (wszystkie lata / rok), kafle (łącznie, średnio rocznie, najlepszy rok/miesiąc, ulubiona pora roku, średnia ocena), wykresy: książki w latach, w miesiącach, pory roku, oceny, najczęściej czytani autorzy; kafel "Przeczytane w …" na dashboardzie prowadzi tu |
-| `/shelf` | półka; zakładki: Wszystkie / Na półce / Pożyczone |
-| `/shelf/new` | dodaj egzemplarz |
-| `/shelf/:id` | karta egzemplarza: status, przycisk "Pożycz" (modal: imię, nazwisko, data, termin), "Zwrócono", historia pożyczeń, "Oznacz jako przeczytaną" |
-| `/loans` | lista aktualnie pożyczonych, sort po dacie, podświetlenie przeterminowanych |
-| `/books/:id` | karta książki w katalogu: moje wpisy przeczytania + egzemplarze na półce |
-| `/profile`, `/admin/users` | jak w poker-stats |
-
-Komponenty współdzielone z poker-stats (kopiowane 1:1): `AppLayout`, `Navigation`, `ProtectedRoute`, `ErrorBoundary`, `LoadingSpinner`, `LoadingSkeleton`, `EmptyState`, `ErrorMessage`, `ConfirmationModal`, `PageHeader`, `useToast`, `AuthContext`, `api/client.ts`.
-
-Nowe komponenty: `BookPicker` (autocomplete + "dodaj nową"), `RatingStars`, `YearMonthInput`, `LoanModal`, `BookCover`, `ShelfItemStatusBadge`, `Pagination`, wykresy `charts/ColumnChart` i `charts/BarList` (czyste elementy HTML + klasy Tailwind, więc dziedziczą motyw; bez biblioteki wykresów).
-
----
-
-### 7.1 Liczba stron
-
-Pole `pageCount` książki jest przybliżone (katalog jest wspólny i deduplikowany po tytule i autorze, więc jedna liczba na tytuł). Źródła: Open Library (`number_of_pages`, a w wyszukiwaniu mediana po wydaniach `number_of_pages_median`), Google Books (`pageCount`), Biblioteka Narodowa (pole MARC 300 $a, np. "459, [4] strony ;"). Przy imporcie po ISBN liczba stron trafia do katalogu razem z resztą metadanych; można ją też wpisać ręcznie na karcie książki.
-
-**Douzupełnianie (`BackfillPageCounts`)** – po starcie aplikacji, w tle, dla książek bez liczby stron: najpierw po ISBN, bez ISBN (albo gdy rekord ISBN nie ma stron) po tytule i autorze. Trafienie z wyszukiwania jest brane tylko wtedy, gdy zgadza się tytuł (część przed dwukropkiem, po normalizacji) i któryś człon nazwiska autora. Każda książka jest sprawdzana raz – wynik ląduje w `book_page_count_lookups`; tylko `UNAVAILABLE` (katalogi nie odpowiadały) jest ponawiane przy kolejnym starcie. Przebieg jest w logu aplikacji: jedna linia na książkę (`Page count backfill: "Tytuł" (Autor) -> 204 pages from openlibrary by ISBN …`) i podsumowanie na końcu. Konfiguracja: `app.catalog.page-count-backfill.enabled|pause|batch-size` (`APP_CATALOG_PAGE_COUNT_BACKFILL_*`); wyłączone, gdy `app.catalog.providers=none`.
-
-## 8. Rozszerzenia planowane (poza MVP)
-
-1. **ISBN + katalog publiczny** – pole ISBN w formularzach, `GET /books/lookup?isbn=`, `OpenLibraryBookMetadataProvider` (bez klucza API; endpoint `https://openlibrary.org/isbn/{isbn}.json` + okładki `covers.openlibrary.org`). Google Books jako drugi provider (fallback), konfigurowany przez `app.catalog.providers`.
-2. **Skaner kodów kreskowych** – w PWA, przez kamerę: `BarcodeDetector` API tam gdzie dostępne (Chrome/Android), fallback `@zxing/browser`. EAN-13 zaczynający się od 978/979 = ISBN-13. Wymaga HTTPS (kamera) – patrz plan wdrożenia.
-3. **Biblioteczka rodzinna** – zaproszenie członka (`POST /libraries/{id}/members`), przełącznik biblioteczki w UI, role OWNER/MEMBER. Przeczytane pozostają osobiste.
-4. **Statusy czytania** – `IN_PROGRESS`, `WANT_TO_READ`, `ABANDONED`.
-5. **Import/eksport CSV** (np. z Goodreads/Lubimyczytać).
-6. **Powiadomienia ntfy** o przeterminowanych pożyczeniach (port `NotificationService` jak w poker-stats).
+Daty w JSON: `{ "year": 2027, "month": 5, "day": null }`; `expiresOn` jako `YYYY-MM-DD`; `freshness` jako `OK | EXPIRING_SOON | EXPIRED | UNKNOWN`; `daysLeft` ze znakiem.

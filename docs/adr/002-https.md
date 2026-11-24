@@ -6,8 +6,8 @@
 ## Kontekst
 
 Aplikacja działa jako PWA na telefonach. Instalacja PWA, bezpieczne przechowywanie tokenów i dostęp do kamery
-(skaner kodów ISBN w fazie 7) wymagają HTTPS. Aplikacja jest publikowana przez nginx wbudowany w kontener frontendu
-(serwuje SPA i proxy'uje `/api` do backendu), na porcie `FRONTEND_PORT` (domyślnie 8020), bez TLS.
+(skaner kodów EAN i OCR dat ważności ze zdjęcia) wymagają HTTPS. Aplikacja jest publikowana przez nginx wbudowany w kontener frontendu
+(serwuje SPA i proxy'uje `/api` do backendu), na porcie `FRONTEND_PORT` (domyślnie 8030), bez TLS.
 
 ## Decyzja
 

@@ -16,7 +16,8 @@ export default defineConfig({
     locale: 'pl-PL',
   },
   projects: [
-    { name: 'mobile-chromium', use: { ...devices['Pixel 5'] } },
+    // CHROMIUM_PATH lets an environment with a preinstalled browser skip `playwright install`
+    { name: 'mobile-chromium', use: { ...devices['Pixel 5'], launchOptions: { executablePath: process.env.CHROMIUM_PATH || undefined } } },
   ],
   webServer: process.env.BASE_URL
     ? undefined

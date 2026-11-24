@@ -1,4 +1,21 @@
-# Powiadomienia z GitHub Actions przez ntfy
+# Powiadomienia przez ntfy
+
+Dwa niezależne źródła powiadomień trafiają na Twój serwer ntfy na Pi: **aplikacja** (tygodniowy raport o terminach) i **GitHub Actions** (wynik buildów).
+
+## Aplikacja: tygodniowy raport o terminach
+
+Backend raz w tygodniu (domyślnie niedziela 18:00 czasu polskiego) wysyła na temat `APP_NTFY_TOPIC` raport każdej spiżarni: partie po terminie, partie kończące się w `APP_DIGEST_SOON_DAYS` dni, produkty poniżej minimalnego zapasu. Pusty raport nie jest wysyłany. Konfiguracja w `.env.production`:
+
+| Zmienna | Znaczenie |
+|---|---|
+| `APP_NTFY_URL` | adres serwera bez tematu, np. `https://ntfy.twoja-domena.pl`; gdy ntfy działa na tym samym Pi, lepiej po sieci Dockera (`http://ntfy:80`, oba stosy w jednej zewnętrznej sieci) albo `http://172.17.0.1:PORT`; puste = nic nie wysyłamy |
+| `APP_NTFY_TOPIC` | temat, np. `kma-larder` (inny niż `kma-builds`, żeby raport i buildy dało się subskrybować osobno) |
+| `APP_NTFY_TOKEN` | token z prawem zapisu do tematu (`ntfy token add`); puste, gdy serwer nie wymaga |
+| `APP_DIGEST_ENABLED`, `APP_DIGEST_CRON`, `APP_DIGEST_SOON_DAYS` | włącznik, harmonogram (cron Springa, z sekundami, Europe/Warsaw), horyzont „kończy się” |
+
+Test bez czekania na niedzielę: jako admin `POST /api/admin/notifications/digest` (np. ze Swaggera `/swagger-ui.html` po zalogowaniu) – odpowiedź `{"sent": 1}` i wpis `ntfy: sent …` w logu backendu. Użytkownik ntfy dla aplikacji: jak niżej dla GitHub Actions, tylko z własnym tematem.
+
+## GitHub Actions: wynik buildów
 
 Workflowy wysyłają powiadomienie na Twój serwer ntfy:
 
