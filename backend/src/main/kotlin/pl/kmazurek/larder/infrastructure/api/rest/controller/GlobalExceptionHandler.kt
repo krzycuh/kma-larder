@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import pl.kmazurek.larder.application.service.ProductMetadataUnavailableException
 import pl.kmazurek.larder.application.usecase.auth.AccountDisabledException
 import pl.kmazurek.larder.application.usecase.auth.EmailAlreadyExistsException
 import pl.kmazurek.larder.application.usecase.auth.InvalidCredentialsException
@@ -60,6 +61,13 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(ConflictException::class)
     fun handleConflict(ex: ConflictException): ResponseEntity<ErrorResponse> = buildErrorResponse(HttpStatus.CONFLICT, "Conflict", ex)
+
+    @ExceptionHandler(ProductMetadataUnavailableException::class)
+    fun handleCatalogUnavailable(ex: ProductMetadataUnavailableException): ResponseEntity<ErrorResponse> {
+        // An outage of a third-party service is not our error: no stack trace
+        logger.warn("HTTP 503: {}", ex.message)
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ErrorResponse("External product database is unavailable"))
+    }
 
     @ExceptionHandler(InvalidPasswordException::class, CannotModifySelfException::class)
     fun handleBadRequest(ex: Exception): ResponseEntity<ErrorResponse> = buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid request", ex)

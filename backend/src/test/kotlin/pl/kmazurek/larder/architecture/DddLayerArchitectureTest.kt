@@ -79,6 +79,14 @@ class DddLayerArchitectureTest {
     }
 
     @Test
+    fun `external catalog adapters should only be implemented in infrastructure catalog package`() {
+        classes()
+            .that().implement(pl.kmazurek.larder.application.service.ProductMetadataProvider::class.java)
+            .should().resideInAPackage("..infrastructure.catalog..")
+            .check(importedClasses)
+    }
+
+    @Test
     fun `controllers should only be in infrastructure api rest package`() {
         classes()
             .that().haveSimpleNameEndingWith("Controller")

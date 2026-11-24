@@ -20,6 +20,12 @@ server:
 app:
   registration:
     enabled: ${APP_REGISTRATION_ENABLED:true}
+  catalog:
+    # External product database for barcode lookup: openfoodfacts (default) or none (offline)
+    provider: ${APP_CATALOG_PROVIDER:openfoodfacts}
+    timeout: ${APP_CATALOG_TIMEOUT:3s}
+    openfoodfacts:
+      base-url: ${APP_CATALOG_OPENFOODFACTS_BASE_URL:https://world.openfoodfacts.org}
 
 ---
 spring:

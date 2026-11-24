@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import pl.kmazurek.larder.application.dto.BarcodeLookupDto
 import pl.kmazurek.larder.application.dto.BatchDto
 import pl.kmazurek.larder.application.dto.BatchRequest
 import pl.kmazurek.larder.application.dto.BatchWithProductDto
@@ -39,6 +40,7 @@ import pl.kmazurek.larder.application.usecase.stock.ListMovements
 import pl.kmazurek.larder.application.usecase.stock.ListProducts
 import pl.kmazurek.larder.application.usecase.stock.ListProductsQuery
 import pl.kmazurek.larder.application.usecase.stock.ListReplenishment
+import pl.kmazurek.larder.application.usecase.stock.LookupBarcode
 import pl.kmazurek.larder.application.usecase.stock.ProductSort
 import pl.kmazurek.larder.application.usecase.stock.RemoveBatch
 import pl.kmazurek.larder.application.usecase.stock.SearchProducts
@@ -65,6 +67,7 @@ class PantryStockController(
     private val listReplenishment: ListReplenishment,
     private val listMovements: ListMovements,
     private val getDashboard: GetDashboard,
+    private val lookupBarcode: LookupBarcode,
     private val auditLogger: AuditLogger,
 ) {
     @GetMapping("/products")
@@ -103,6 +106,17 @@ class PantryStockController(
         @RequestParam(required = false, defaultValue = "10") limit: Int,
     ): ResponseEntity<List<ProductDto>> =
         ResponseEntity.ok(searchProducts.execute(authentication.userId(), PantryId.fromString(pantryId), q, limit))
+
+    /**
+     * 200 with the pantry's product and/or external data; 400 invalid code; 404 nobody knows it; 503 database down.
+     */
+    @GetMapping("/products/lookup")
+    fun lookup(
+        authentication: Authentication,
+        @PathVariable pantryId: String,
+        @RequestParam barcode: String,
+    ): ResponseEntity<BarcodeLookupDto> =
+        ResponseEntity.ok(lookupBarcode.execute(authentication.userId(), PantryId.fromString(pantryId), barcode))
 
     @PostMapping("/products")
     fun create(

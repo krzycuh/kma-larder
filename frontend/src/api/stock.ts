@@ -1,6 +1,7 @@
 import apiClient from './client';
 import type { PagedResponse } from '../types/common';
 import type {
+  BarcodeLookup,
   Batch,
   BatchRequest,
   BatchWithProduct,
@@ -25,6 +26,12 @@ export const pantryStockApi = {
 
   searchProducts: async (pantryId: string, q: string, limit = 10): Promise<Product[]> => {
     const response = await apiClient.get<Product[]>(`/pantries/${pantryId}/products/search`, { params: { q, limit } });
+    return response.data;
+  },
+
+  /** A scanned or typed barcode: the pantry's product with that code and/or what Open Food Facts knows */
+  lookupBarcode: async (pantryId: string, barcode: string): Promise<BarcodeLookup> => {
+    const response = await apiClient.get<BarcodeLookup>(`/pantries/${pantryId}/products/lookup`, { params: { barcode } });
     return response.data;
   },
 

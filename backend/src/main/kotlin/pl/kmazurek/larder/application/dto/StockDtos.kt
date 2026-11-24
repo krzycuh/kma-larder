@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
+import pl.kmazurek.larder.application.service.ProductMetadata
 import pl.kmazurek.larder.domain.model.stock.ApproximateDate
 import pl.kmazurek.larder.domain.model.stock.Batch
 import pl.kmazurek.larder.domain.model.stock.Freshness
@@ -308,4 +309,25 @@ data class QuantityChangeRequest(
     @field:Max(value = 100000, message = "Quantity is too large")
     val quantity: Int,
     val occurredOn: LocalDate? = null,
+)
+
+data class ProductMetadataDto(
+    val barcode: String,
+    val name: String,
+    val brand: String?,
+    val packageSize: String?,
+    val imageUrl: String?,
+    val source: String,
+) {
+    companion object {
+        fun fromMetadata(metadata: ProductMetadata) =
+            ProductMetadataDto(metadata.barcode, metadata.name, metadata.brand, metadata.packageSize, metadata.imageUrl, metadata.source)
+    }
+}
+
+/** What a scanned code means: a product already in the pantry, and/or what an external database knows about it. */
+data class BarcodeLookupDto(
+    val barcode: String,
+    val product: ProductDto?,
+    val metadata: ProductMetadataDto?,
 )

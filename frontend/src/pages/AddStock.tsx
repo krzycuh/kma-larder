@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { pantryStockApi, productsApi } from '../api/stock';
 import { PageHeader } from '../components/PageHeader';
 import { PantrySwitcher } from '../components/PantrySwitcher';
@@ -21,6 +22,7 @@ import type { BatchRequest, Product } from '../types/stock';
 import { getApiErrorMessage } from '../utils/apiError';
 import { EMPTY_DATE_INPUT, isPast, parseDateInput, type ApproximateDateInputValue } from '../utils/approximateDate';
 import { buildProductRequest, DEFAULT_PRODUCT_FIELDS, type ProductFieldsValue, type ProductFormErrors } from '../utils/productForm';
+import { normalizeBarcode } from '../utils/barcode';
 
 type FormErrors = ProductFormErrors & {
   quantity?: string;
@@ -109,11 +111,46 @@ export function AddStock() {
     });
   };
 
-  const onScanned = (barcode: string) => {
-    setScannerOpen(false);
+  const [lookupHint, setLookupHint] = useState<string | null>(null);
+  const lookup = useMutation({
+    mutationFn: (barcode: string) => pantryStockApi.lookupBarcode(pantry!.id, barcode),
+    onSuccess: (result) => {
+      if (result.product) {
+        setSelected(result.product);
+        setName(result.product.name);
+        setLookupHint(t.barcode.foundInPantry);
+        return;
+      }
+      if (result.metadata) {
+        const meta = result.metadata;
+        setSelected(null);
+        setName(meta.brand && !meta.name.toLowerCase().includes(meta.brand.toLowerCase()) ? `${meta.name} ${meta.brand}` : meta.name);
+        setFields((f) => ({ ...f, barcode: meta.barcode, kind: 'STORE_BOUGHT', packageSize: f.packageSize || meta.packageSize || '' }));
+        setLookupHint(t.barcode.found(t.barcode.sourceName[meta.source] ?? meta.source));
+      }
+    },
+    onError: (err) => {
+      const status = (err as AxiosError)?.response?.status;
+      setLookupHint(status === 404 ? t.barcode.notFound : status === 503 ? t.barcode.unavailable : status === 400 ? t.barcode.invalid : getApiErrorMessage(err));
+    },
+  });
+
+  const lookupBarcode = (raw: string) => {
+    const barcode = normalizeBarcode(raw);
+    if (!barcode) {
+      setLookupHint(t.barcode.invalid);
+      return;
+    }
     setSelected(null);
     setFields((f) => ({ ...f, barcode, kind: 'STORE_BOUGHT' }));
+    setLookupHint(null);
+    lookup.mutate(barcode);
+  };
+
+  const onScanned = (barcode: string) => {
+    setScannerOpen(false);
     if (searchParams.get('scan')) setSearchParams({}, { replace: true });
+    lookupBarcode(barcode);
   };
 
   if (pantryLoading || (prefillId && prefill.isLoading)) return <LoadingSpinner />;
@@ -121,15 +158,27 @@ export function AddStock() {
 
   const parsedBestBefore = parseDateInput(bestBefore).date;
   const scanButton = (
-    <button
-      type="button"
-      onClick={() => setScannerOpen(true)}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      aria-label={t.scanner.openLabel}
-    >
-      <NavIcon name="camera" className="h-4 w-4" />
-      {t.scanner.open}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setScannerOpen(true)}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label={t.scanner.openLabel}
+      >
+        <NavIcon name="camera" className="h-4 w-4" />
+        {t.scanner.open}
+      </button>
+      {fields.barcode.length >= 8 && (
+        <button
+          type="button"
+          onClick={() => lookupBarcode(fields.barcode)}
+          disabled={lookup.isPending}
+          className="shrink-0 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        >
+          {lookup.isPending ? t.barcode.looking : t.barcode.lookup}
+        </button>
+      )}
+    </>
   );
 
   return (
@@ -160,6 +209,11 @@ export function AddStock() {
             error={errors.name}
             autoFocus={!prefillId}
           />
+          {lookupHint && (
+            <p className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800" role="status">
+              {lookupHint}
+            </p>
+          )}
           {!selected && <ProductFields value={fields} onChange={setFields} errors={errors} full={false} barcodeAction={scanButton} />}
           {selected && (
             <p className="text-sm text-gray-600">
