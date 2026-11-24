@@ -124,7 +124,7 @@ export interface ProductListParams {
   category?: ProductCategory;
   kind?: ProductKind;
   includeArchived?: boolean;
-  sort?: ProductSort;
+  sort?: Uppercase<ProductSort>;
   page?: number;
   pageSize?: number;
 }

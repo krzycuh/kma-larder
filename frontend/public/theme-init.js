@@ -13,5 +13,5 @@
     (preference === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   if (dark) document.documentElement.classList.add('dark');
   var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#12101c' : '#1d4ed8');
+  if (meta) meta.setAttribute('content', dark ? '#16120f' : '#b44d26');
 })();

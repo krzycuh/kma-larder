@@ -11,14 +11,3 @@
   }
 }
 
-@layer utilities {
-  .profit-text {
-    @apply text-profit;
-  }
-  .loss-text {
-    @apply text-loss;
-  }
-  .breakeven-text {
-    @apply text-gray-600;
-  }
-}

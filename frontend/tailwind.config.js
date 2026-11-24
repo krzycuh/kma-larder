@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
 // Theme-aware palette: every color family the app uses reads its shades from CSS variables
-// (src/theme.css) – the light values are Tailwind's defaults, `html.dark` swaps in the neon theme.
+// (src/theme.css) – warm "pantry" values by default, `html.dark` swaps in the "cellar" theme.
 const SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 const themed = (family) =>
   Object.fromEntries(SHADES.map((shade) => [shade, `rgb(var(--c-${family}-${shade}) / <alpha-value>)`]));
@@ -22,9 +22,8 @@ export default {
         green: themed('green'),
         amber: themed('amber'),
         yellow: themed('yellow'),
-        // Rating stars: amber in the light theme, pink in neon (amber is "lent" there)
         star: 'rgb(var(--c-star) / <alpha-value>)',
-        // Statistics charts: one hue per chart, neon in the dark theme (src/theme.css)
+        // Statistics charts: one hue per chart (src/theme.css)
         chart: {
           1: 'rgb(var(--c-chart-1) / <alpha-value>)',
           2: 'rgb(var(--c-chart-2) / <alpha-value>)',
@@ -39,28 +38,6 @@ export default {
           fg: '#ffffff',
           muted: '#e5e7eb',
           ink: '#111827',
-        },
-        primary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
-        },
-        profit: {
-          light: '#86efac',
-          DEFAULT: '#22c55e',
-          dark: '#15803d',
-        },
-        loss: {
-          light: '#fca5a5',
-          DEFAULT: '#ef4444',
-          dark: '#b91c1c',
         },
       },
       fontFamily: {

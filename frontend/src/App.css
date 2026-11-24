@@ -20,7 +20,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid rgb(var(--c-blue-500));
   outline-offset: 2px;
 }
 
