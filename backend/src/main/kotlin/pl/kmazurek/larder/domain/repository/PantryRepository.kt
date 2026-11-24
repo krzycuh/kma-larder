@@ -14,6 +14,9 @@ interface PantryRepository {
 
     fun findByMember(userId: UserId): List<Pantry>
 
+    /** Every pantry, oldest first (the weekly digest goes through all of them) */
+    fun findAll(): List<Pantry>
+
     fun save(pantry: Pantry): Pantry
 
     fun findMemberRole(

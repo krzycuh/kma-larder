@@ -16,6 +16,9 @@ app:
     enabled: true
   catalog:
     provider: none
+  notifications:
+    digest:
+      enabled: false
 
 jwt:
   secret: test-secret-key-that-is-long-enough-for-jwt-signing-minimum-256-bits

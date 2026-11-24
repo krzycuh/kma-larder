@@ -17,6 +17,8 @@ class PantryRepositoryImpl(
 ) : PantryRepository {
     override fun findById(id: PantryId): Pantry? = jpaRepository.findById(id.value).map { PantryMapper.toDomain(it) }.orElse(null)
 
+    override fun findAll(): List<Pantry> = jpaRepository.findAll().map { PantryMapper.toDomain(it) }.sortedBy { it.createdAt }
+
     override fun findByMember(userId: UserId): List<Pantry> = jpaRepository.findByMember(userId.value).map { PantryMapper.toDomain(it) }
 
     override fun save(pantry: Pantry): Pantry = PantryMapper.toDomain(jpaRepository.save(PantryMapper.toJpa(pantry)))

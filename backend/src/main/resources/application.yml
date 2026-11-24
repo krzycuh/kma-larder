@@ -26,6 +26,18 @@ app:
     timeout: ${APP_CATALOG_TIMEOUT:3s}
     openfoodfacts:
       base-url: ${APP_CATALOG_OPENFOODFACTS_BASE_URL:https://world.openfoodfacts.org}
+  notifications:
+    # ntfy server for household notifications; empty url = nothing is sent
+    ntfy:
+      url: ${APP_NTFY_URL:}
+      topic: ${APP_NTFY_TOPIC:kma-larder}
+      token: ${APP_NTFY_TOKEN:}
+      timeout: ${APP_NTFY_TIMEOUT:5s}
+    # Weekly digest: what is past its date, what runs out soon, what is below its minimum
+    digest:
+      enabled: ${APP_DIGEST_ENABLED:true}
+      cron: ${APP_DIGEST_CRON:0 0 18 * * SUN}
+      soon-days: ${APP_DIGEST_SOON_DAYS:30}
 
 ---
 spring:

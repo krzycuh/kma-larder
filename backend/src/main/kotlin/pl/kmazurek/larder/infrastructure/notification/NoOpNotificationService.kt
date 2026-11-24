@@ -1,13 +1,11 @@
 package pl.kmazurek.larder.infrastructure.notification
 
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import pl.kmazurek.larder.application.service.NotificationService
 
 /**
- * Default notification adapter: logs only. Replace with ntfy/e-mail when needed.
+ * Default notification adapter: logs only. Used when ntfy is not configured.
  */
-@Service
 class NoOpNotificationService : NotificationService {
     private val logger = LoggerFactory.getLogger(NoOpNotificationService::class.java)
 
@@ -16,5 +14,15 @@ class NoOpNotificationService : NotificationService {
         userEmail: String,
     ) {
         logger.info("New user registered: {} <{}>", userName, userEmail)
+    }
+
+    override fun notify(
+        title: String,
+        message: String,
+        priority: Int,
+        tags: List<String>,
+    ): Boolean {
+        logger.info("Notification (not sent, ntfy not configured): {} – {}", title, message.lineSequence().firstOrNull())
+        return false
     }
 }
