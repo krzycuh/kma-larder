@@ -71,6 +71,9 @@ class DddLayerArchitectureTest {
         classes()
             .that().implement(pl.kmazurek.larder.domain.repository.UserRepository::class.java)
             .or().implement(pl.kmazurek.larder.domain.repository.PantryRepository::class.java)
+            .or().implement(pl.kmazurek.larder.domain.repository.ProductRepository::class.java)
+            .or().implement(pl.kmazurek.larder.domain.repository.BatchRepository::class.java)
+            .or().implement(pl.kmazurek.larder.domain.repository.StockMovementRepository::class.java)
             .should().resideInAPackage("..infrastructure.persistence..")
             .check(importedClasses)
     }
