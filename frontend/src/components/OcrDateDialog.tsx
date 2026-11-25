@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { t } from '../i18n';
 import type { ApproximateDate } from '../types/stock';
-import { extractDates, type DateCandidate } from '../utils/dateOcr';
+import type { DateCandidate } from '../utils/dateOcr';
 import { formatApproximateDate } from '../utils/format';
 
 interface OcrDateDialogProps {
@@ -22,6 +22,7 @@ type Stage = 'idle' | 'loading' | 'recognizing' | 'done' | 'error';
 export function OcrDateDialog({ open, onClose, onPick }: OcrDateDialogProps) {
   const [stage, setStage] = useState<Stage>('idle');
   const [progress, setProgress] = useState(0);
+  const [attempt, setAttempt] = useState<{ current: number; total: number } | null>(null);
   const [candidates, setCandidates] = useState<DateCandidate[]>([]);
   const [rawText, setRawText] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
@@ -57,15 +58,16 @@ export function OcrDateDialog({ open, onClose, onPick }: OcrDateDialogProps) {
     setProgress(0);
     setCandidates([]);
     try {
-      const { recognizeText } = await import('../lib/ocr');
-      const text = await recognizeText(file, (status, value) => {
+      const { recognizeDates } = await import('../lib/ocr');
+      const result = await recognizeDates(file, (status, value, current) => {
         if (cancelled.current) return;
         setStage(status);
         setProgress(Math.round(value * 100));
+        setAttempt(current ?? null);
       });
       if (cancelled.current) return;
-      setRawText(text);
-      setCandidates(extractDates(text));
+      setRawText(result.text);
+      setCandidates(result.candidates);
       setStage('done');
     } catch {
       if (!cancelled.current) setStage('error');
@@ -83,12 +85,16 @@ export function OcrDateDialog({ open, onClose, onPick }: OcrDateDialogProps) {
         <DialogPanel className="max-h-full w-full max-w-md overflow-y-auto rounded-lg bg-white p-5 shadow-xl">
           <DialogTitle className="text-lg font-semibold text-gray-900">{t.ocr.title}</DialogTitle>
           <p className="mt-1 text-sm text-gray-600">{t.ocr.hint}</p>
+          <p className="mt-1 text-xs text-gray-500">{t.ocr.orientationHint}</p>
 
           {preview && <img src={preview} alt="" className="mt-3 max-h-48 w-full rounded-md object-contain bg-gray-100" />}
 
           {busy && (
             <div className="mt-4" role="status" aria-live="polite">
-              <p className="text-sm text-gray-700">{stage === 'loading' ? t.ocr.loadingEngine : t.ocr.reading(progress)}</p>
+              <p className="text-sm text-gray-700">
+                {stage === 'loading' ? t.ocr.loadingEngine : t.ocr.reading(progress)}
+                {attempt && attempt.current > 1 && <span className="ml-1 text-gray-500">{t.ocr.attempt(attempt.current)}</span>}
+              </p>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200">
                 <div className="h-2 rounded-full bg-blue-600 transition-all" style={{ width: `${stage === 'loading' ? Math.max(5, progress) : progress}%` }} />
               </div>
@@ -108,6 +114,7 @@ export function OcrDateDialog({ open, onClose, onPick }: OcrDateDialogProps) {
               ) : (
                 <>
                   <p className="text-sm font-medium text-gray-700">{t.ocr.foundDates}</p>
+                  <p className="text-xs text-gray-500">{t.ocr.pickHint}</p>
                   <ul className="mt-2 space-y-2">
                     {candidates.map((candidate) => (
                       <li key={`${candidate.date.year}-${candidate.date.month}-${candidate.date.day}`}>
