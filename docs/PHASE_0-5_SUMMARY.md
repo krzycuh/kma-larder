@@ -26,7 +26,7 @@ Data: 2026-11-24. Zakres: szkielet, domena spiżarni, frontend, EAN + Open Food 
 
 ## Sprawdzone
 - Backend na lokalnym PostgreSQL 16: migracje, walidacja schematu, pełny przebieg API (produkty, partie, zużycie, 409 przy duplikacie i braku sztuk, terminy, lista zakupów, historia, dashboard, przeliczenie terminu po zmianie przydatności).
-- Frontend w Chromium (390 px i 1280 px, oba motywy): zrzuty ekranu stron; OCR na syntetycznej etykiecie „Najlepiej spożyć przed: 12.05.2027” rozpoznany i wpisany w pola daty; zasoby OCR ładowane z własnego origin.
+- Frontend w Chromium (390 px i 1280 px, oba motywy): zrzuty ekranu stron; OCR na syntetycznej etykiecie „Najlepiej spożyć przed: 12.05.2027” i na zdjęciach nadruku igłowego z folii (poziomym i obróconym) rozpoznany przez dialog aplikacji; zasoby OCR ładowane z własnego origin.
 
 ## Uwagi
 - Fixture'y Open Food Facts w `src/test/resources/catalog/openfoodfacts/` odwzorowują udokumentowany format API v2; środowisko, w którym powstawała faza 3, nie miało dostępu do `world.openfoodfacts.org`. Warto podmienić je na prawdziwe odpowiedzi przy pierwszej okazji.
