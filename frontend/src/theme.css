@@ -1,0 +1,126 @@
+/*
+ * Color themes. Tailwind's gray/blue/red/green/amber/yellow/white read these variables (tailwind.config.js),
+ * so components keep plain classes (bg-white, text-gray-900, bg-blue-600) and the theme swaps meaning.
+ *
+ * The pantry is about freshness, so green / amber / red are reserved for the freshness status
+ * (fine / running out / past its date) in BOTH themes. The accent ("blue" in class names) is terracotta:
+ * jars, clay, wooden shelves. Neutrals are warm (Tailwind "stone").
+ *
+ *            light ("pantry")              dark ("cellar", html.dark)
+ *   white    cream cards                   dark brown cards
+ *   gray     warm stone scale              inverted: near-black brown page → cream text
+ *   blue     terracotta accent             lighter terracotta / amber glow (actions, links, focus)
+ *   green    fresh / ok                    same hue, lifted for contrast
+ *   amber    expiring soon                 same hue, lifted
+ *   red      expired, errors, danger       same hue, lifted
+ *   yellow   warnings                      same hue, lifted
+ *   chart-N  statistics hues (kept for later)
+ */
+:root {
+  --c-white: 255 253 250;
+  --c-star: 245 158 11;
+
+  --c-chart-1: 194 65 12; --c-chart-2: 101 163 13; --c-chart-3: 202 138 4; --c-chart-4: 8 145 178; --c-chart-5: 124 58 237;
+  --c-chart-muted: 231 219 206;
+
+  /* stone */
+  --c-gray-50: 250 248 245; --c-gray-100: 245 242 237; --c-gray-200: 231 225 216; --c-gray-300: 214 206 195;
+  --c-gray-400: 168 158 146; --c-gray-500: 120 111 101; --c-gray-600: 87 80 72; --c-gray-700: 68 62 55;
+  --c-gray-800: 41 37 33; --c-gray-900: 28 25 22; --c-gray-950: 12 10 9;
+
+  /* terracotta */
+  --c-blue-50: 253 245 240; --c-blue-100: 250 230 218; --c-blue-200: 245 205 183; --c-blue-300: 236 170 136;
+  --c-blue-400: 224 128 86; --c-blue-500: 205 96 52; --c-blue-600: 180 77 38; --c-blue-700: 150 62 31;
+  --c-blue-800: 122 52 29; --c-blue-900: 100 44 26; --c-blue-950: 54 21 11;
+
+  --c-red-50: 254 242 242; --c-red-100: 254 226 226; --c-red-200: 254 202 202; --c-red-300: 252 165 165;
+  --c-red-400: 248 113 113; --c-red-500: 239 68 68; --c-red-600: 220 38 38; --c-red-700: 185 28 28;
+  --c-red-800: 153 27 27; --c-red-900: 127 29 29; --c-red-950: 69 10 10;
+
+  /* olive-leaning green: fresh */
+  --c-green-50: 243 248 236; --c-green-100: 230 241 214; --c-green-200: 205 226 176; --c-green-300: 169 205 125;
+  --c-green-400: 132 178 78; --c-green-500: 101 150 49; --c-green-600: 79 121 36; --c-green-700: 63 95 31;
+  --c-green-800: 51 76 28; --c-green-900: 43 64 26; --c-green-950: 20 34 11;
+
+  --c-amber-50: 255 251 235; --c-amber-100: 254 243 199; --c-amber-200: 253 230 138; --c-amber-300: 252 211 77;
+  --c-amber-400: 251 191 36; --c-amber-500: 245 158 11; --c-amber-600: 217 119 6; --c-amber-700: 180 83 9;
+  --c-amber-800: 146 64 14; --c-amber-900: 120 53 15; --c-amber-950: 69 26 3;
+
+  --c-yellow-50: 254 252 232; --c-yellow-100: 254 249 195; --c-yellow-200: 254 240 138; --c-yellow-300: 253 224 71;
+  --c-yellow-400: 250 204 21; --c-yellow-500: 234 179 8; --c-yellow-600: 202 138 4; --c-yellow-700: 161 98 7;
+  --c-yellow-800: 133 77 14; --c-yellow-900: 113 63 18; --c-yellow-950: 66 32 6;
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --c-white: 36 30 26;
+  --c-star: 251 191 36;
+
+  --c-chart-1: 240 132 88; --c-chart-2: 163 230 53; --c-chart-3: 250 204 21; --c-chart-4: 34 211 238; --c-chart-5: 167 139 250;
+  --c-chart-muted: 78 64 54;
+
+  /* Inverted warm browns: 50 is the page, 900 the main text */
+  --c-gray-50: 22 18 15; --c-gray-100: 36 30 26; --c-gray-200: 54 45 39; --c-gray-300: 74 63 55;
+  --c-gray-400: 122 108 96; --c-gray-500: 160 146 132; --c-gray-600: 196 184 170; --c-gray-700: 221 211 199;
+  --c-gray-800: 238 231 221; --c-gray-900: 250 246 240; --c-gray-950: 255 253 250;
+
+  /* Candle-lit terracotta: 600 is the button fill, text-white on it reads as dark text */
+  --c-blue-50: 46 30 22; --c-blue-100: 64 40 28; --c-blue-200: 102 58 38; --c-blue-300: 150 82 50;
+  --c-blue-400: 212 120 78; --c-blue-500: 230 140 96; --c-blue-600: 236 152 108; --c-blue-700: 243 178 140;
+  --c-blue-800: 248 206 178; --c-blue-900: 252 230 214; --c-blue-950: 254 243 235;
+
+  --c-red-50: 58 24 22; --c-red-100: 80 30 28; --c-red-200: 127 38 36; --c-red-300: 180 54 50;
+  --c-red-400: 248 113 113; --c-red-500: 248 113 113; --c-red-600: 248 113 113; --c-red-700: 252 165 165;
+  --c-red-800: 254 202 202; --c-red-900: 254 226 226; --c-red-950: 254 242 242;
+
+  --c-green-50: 28 38 20; --c-green-100: 38 52 26; --c-green-200: 58 82 38; --c-green-300: 86 120 52;
+  --c-green-400: 150 200 90; --c-green-500: 150 200 90; --c-green-600: 150 200 90; --c-green-700: 184 222 136;
+  --c-green-800: 212 236 180; --c-green-900: 232 245 214; --c-green-950: 243 248 236;
+
+  --c-amber-50: 56 40 12; --c-amber-100: 74 52 14; --c-amber-200: 120 80 20; --c-amber-300: 170 112 20;
+  --c-amber-400: 251 191 36; --c-amber-500: 251 191 36; --c-amber-600: 251 191 36; --c-amber-700: 252 211 77;
+  --c-amber-800: 253 230 138; --c-amber-900: 254 243 199; --c-amber-950: 255 251 235;
+
+  --c-yellow-50: 50 44 10; --c-yellow-100: 66 56 12; --c-yellow-200: 113 80 18; --c-yellow-300: 180 130 20;
+  --c-yellow-400: 250 204 21; --c-yellow-500: 250 204 21; --c-yellow-600: 250 204 21; --c-yellow-700: 253 224 71;
+  --c-yellow-800: 254 240 138; --c-yellow-900: 254 249 195; --c-yellow-950: 254 252 232;
+}
+
+/* Focus-ring gaps take the page color instead of Tailwind's hard-coded white */
+html.dark *, html.dark ::before, html.dark ::after {
+  --tw-ring-offset-color: rgb(var(--c-gray-50));
+}
+
+/* Shadows vanish on dark brown: cards get a thin outline, overlays a deep shadow */
+html.dark .shadow-sm, html.dark .shadow, html.dark .shadow-inner {
+  --tw-shadow: 0 0 0 1px rgb(var(--c-gray-200));
+}
+html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl {
+  --tw-shadow: 0 0 0 1px rgb(var(--c-gray-200)), 0 12px 32px rgb(0 0 0 / 0.6);
+}
+
+/* Warm glow on primary actions, like candlelight; keeps focus rings (they share box-shadow) */
+html.dark .bg-blue-600 {
+  --tw-shadow: 0 0 14px rgb(236 152 108 / 0.35);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+/* Navigation line icons: warm accent, brighter on the active entry */
+html.dark .nav-icon {
+  color: rgb(var(--c-blue-600));
+  filter: drop-shadow(0 0 3px rgb(236 152 108 / 0.5));
+}
+html.dark .bg-blue-100 > .nav-icon {
+  color: rgb(var(--c-blue-800));
+  filter: drop-shadow(0 0 5px rgb(236 152 108 / 0.8));
+}
+html.dark .logo-glow {
+  text-shadow: 0 0 12px rgb(236 152 108 / 0.5);
+}
+
+/* Form fields without an explicit bg-* class get the browser's grey dark default; match the page instead.
+   :where() keeps specificity at zero, so any bg-* utility still wins. */
+html.dark :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select) {
+  background-color: rgb(var(--c-gray-50));
+}

@@ -1,0 +1,70 @@
+name: Frontend CI
+
+# Runs on pull requests only; after a merge, Deploy to Production builds the images.
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm run test -- --run --passWithNoTests
+
+      - name: Build
+        run: npm run build
+
+  notify-failure:
+    name: Notify on failure
+    needs: lint-and-test
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout notification action
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+
+      - name: Send ntfy notification
+        uses: ./.github/actions/ntfy
+        with:
+          url: ${{ secrets.NTFY_URL }}
+          topic: ${{ secrets.NTFY_TOPIC }}
+          token: ${{ secrets.NTFY_TOKEN }}
+          title: 'KMA Larder: Frontend CI nie przeszło'
+          message: >-
+            PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
+          tags: x
+          priority: '4'
+          click: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
