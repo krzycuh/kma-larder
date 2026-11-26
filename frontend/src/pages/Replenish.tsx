@@ -55,7 +55,7 @@ export function Replenish() {
                 <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">{t.replenish.missing(item.missing)}</span>
                 <Link
                   to={`/add?productId=${item.product.id}`}
-                  className="hidden rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:inline-block"
+                  className="btn hidden rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:inline-flex"
                 >
                   + {t.product.addBatch.replace('+ ', '')}
                 </Link>
