@@ -65,6 +65,37 @@ class ProductTest {
     }
 
     @Test
+    fun `image url must be an http link, is trimmed and may be cleared`() {
+        val product =
+            Product.create(
+                pantryId,
+                ProductName.of("Pomidory"),
+                ProductKind.STORE_BOUGHT,
+                ProductCategory.CANNED,
+                imageUrl = "  https://images.openfoodfacts.org/x/front_pl.200.jpg ",
+            )
+        assertEquals("https://images.openfoodfacts.org/x/front_pl.200.jpg", product.imageUrl)
+        assertNull(
+            Product.create(pantryId, ProductName.of("X"), ProductKind.STORE_BOUGHT, ProductCategory.OTHER, imageUrl = "   ").imageUrl,
+        )
+        assertThrows<IllegalArgumentException> {
+            Product.create(pantryId, ProductName.of("X"), ProductKind.STORE_BOUGHT, ProductCategory.OTHER, imageUrl = "javascript:alert(1)")
+        }
+        assertThrows<IllegalArgumentException> {
+            Product.create(pantryId, ProductName.of("X"), ProductKind.STORE_BOUGHT, ProductCategory.OTHER, imageUrl = "https://a.b/c d.jpg")
+        }
+        assertThrows<IllegalArgumentException> {
+            Product.create(
+                pantryId,
+                ProductName.of("X"),
+                ProductKind.STORE_BOUGHT,
+                ProductCategory.OTHER,
+                imageUrl = "https://" + "a".repeat(500),
+            )
+        }
+    }
+
+    @Test
     fun `update trims optional texts and can archive`() {
         val product = Product.create(pantryId, ProductName.of("Woda"), ProductKind.STORE_BOUGHT, ProductCategory.BEVERAGES)
         val updated =
@@ -77,10 +108,12 @@ class ProductTest {
                 defaultShelfLifeMonths = null,
                 minQuantity = 6,
                 notes = "  ",
+                imageUrl = " https://example.org/woda.jpg ",
                 archived = true,
             )
         assertEquals("1,5 l", updated.packageSize)
         assertNull(updated.notes)
+        assertEquals("https://example.org/woda.jpg", updated.imageUrl)
         assertEquals(6, updated.minQuantity)
         assertEquals(true, updated.archived)
     }

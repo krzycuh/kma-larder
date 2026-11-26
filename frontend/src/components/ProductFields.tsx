@@ -1,6 +1,7 @@
 import { t } from '../i18n';
 import { PRODUCT_CATEGORIES, type ProductCategory, type ProductKind } from '../types/stock';
 import { CATEGORY_ICONS } from '../utils/categories';
+import { ProductThumb } from './ProductThumb';
 
 import { inputClasses } from '../utils/formStyles';
 import type { ProductFieldsValue, ProductFormErrors } from '../utils/productForm';
@@ -126,6 +127,37 @@ export function ProductFields({ value, onChange, errors = {}, barcodeAction, ful
               className={`${inputClasses} sm:w-40`}
             />
             <p className="mt-1 text-xs text-gray-500">{t.product.minQuantityHint}</p>
+          </div>
+          <div>
+            <label htmlFor="product-image" className="block text-sm font-medium text-gray-700">
+              {t.product.imageUrl} <span className="text-gray-400">({t.common.optional})</span>
+            </label>
+            <div className="mt-1 flex items-start gap-3">
+              <ProductThumb product={{ category: value.category, imageUrl: value.imageUrl.trim() || null }} size="md" />
+              <div className="min-w-0 flex-1">
+                <input
+                  id="product-image"
+                  type="url"
+                  inputMode="url"
+                  value={value.imageUrl}
+                  onChange={(e) => set('imageUrl', e.target.value)}
+                  placeholder={t.product.imageUrlPlaceholder}
+                  className={`${inputClasses} mt-0`}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  {t.product.imageUrlHint}
+                  {value.imageUrl && (
+                    <>
+                      {' · '}
+                      <button type="button" className="underline hover:text-gray-900" onClick={() => set('imageUrl', '')}>
+                        {t.product.removeImage}
+                      </button>
+                    </>
+                  )}
+                </p>
+                {errors.imageUrl && <p className="mt-1 text-sm text-red-700">{errors.imageUrl}</p>}
+              </div>
+            </div>
           </div>
           <div>
             <label htmlFor="product-notes" className="block text-sm font-medium text-gray-700">

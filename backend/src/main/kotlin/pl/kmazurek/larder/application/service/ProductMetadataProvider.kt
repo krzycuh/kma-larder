@@ -1,6 +1,7 @@
 package pl.kmazurek.larder.application.service
 
 import pl.kmazurek.larder.domain.model.stock.Barcode
+import pl.kmazurek.larder.domain.model.stock.ProductCategory
 
 /**
  * What an external product database knows about a barcode: enough to prefill a new product.
@@ -11,6 +12,8 @@ data class ProductMetadata(
     val brand: String?,
     val packageSize: String?,
     val imageUrl: String?,
+    /** The pantry category suggested by the database's own classification; null when nothing matched */
+    val category: ProductCategory? = null,
     val source: String,
 )
 

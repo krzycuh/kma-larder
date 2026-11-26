@@ -13,7 +13,7 @@ import { PantrySwitcher } from '../components/PantrySwitcher';
 import { formatDate } from '../utils/format';
 import { getApiErrorMessage } from '../utils/apiError';
 import { describeDaysLeft } from '../utils/freshness';
-import { CATEGORY_ICONS } from '../utils/categories';
+import { ProductThumb } from '../components/ProductThumb';
 
 interface StatTileProps {
   label: string;
@@ -148,9 +148,7 @@ export function Dashboard() {
                     {data.expiring.map((batch) => (
                       <li key={batch.id}>
                         <Link to={`/products/${batch.product.id}`} className={listRowClasses}>
-                          <span className="text-2xl" aria-hidden="true">
-                            {CATEGORY_ICONS[batch.product.category]}
-                          </span>
+                          <ProductThumb product={batch.product} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-medium text-gray-900">
                               {batch.quantity} × {batch.product.name}
@@ -181,9 +179,7 @@ export function Dashboard() {
                     {data.belowMinimum.map((item) => (
                       <li key={item.product.id}>
                         <Link to={`/products/${item.product.id}`} className={listRowClasses}>
-                          <span className="text-2xl" aria-hidden="true">
-                            {CATEGORY_ICONS[item.product.category]}
-                          </span>
+                          <ProductThumb product={item.product} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-medium text-gray-900">{item.product.name}</p>
                             <p className="text-xs text-gray-500">

@@ -8,7 +8,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { useCurrentPantry } from '../hooks/usePantries';
 import { t } from '../i18n';
-import { CATEGORY_ICONS } from '../utils/categories';
+import { ProductThumb } from '../components/ProductThumb';
 
 /**
  * Shopping list: products below their minimum stock, biggest gap first.
@@ -41,9 +41,7 @@ export function Replenish() {
           <ul className="divide-y divide-gray-100 rounded-lg bg-white shadow-sm">
             {query.data?.map((item) => (
               <li key={item.product.id} className="flex items-center gap-3 p-3 sm:p-4">
-                <span className="text-2xl" aria-hidden="true">
-                  {CATEGORY_ICONS[item.product.category]}
-                </span>
+                <ProductThumb product={item.product} />
                 <div className="min-w-0 flex-1">
                   <Link to={`/products/${item.product.id}`} className="block truncate font-semibold text-gray-900 hover:text-blue-700">
                     {item.product.name}

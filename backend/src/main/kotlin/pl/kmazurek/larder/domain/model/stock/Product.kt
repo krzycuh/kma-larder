@@ -46,6 +46,7 @@ data class Product(
     val defaultShelfLifeMonths: Int? = null,
     val minQuantity: Int = 0,
     val notes: String? = null,
+    val imageUrl: String? = null,
     val archived: Boolean = false,
     val createdByUserId: UserId? = null,
     val createdAt: LocalDateTime,
@@ -60,6 +61,7 @@ data class Product(
         }
         packageSize?.let { require(it.length <= 50) { "Package size cannot exceed 50 characters" } }
         notes?.let { require(it.length <= 2000) { "Notes cannot exceed 2000 characters" } }
+        imageUrl?.let { require(isHttpUrl(it)) { "Image URL must be an http(s) link of at most $MAX_IMAGE_URL_LENGTH characters" } }
     }
 
     fun update(
@@ -71,6 +73,7 @@ data class Product(
         defaultShelfLifeMonths: Int?,
         minQuantity: Int,
         notes: String?,
+        imageUrl: String?,
         archived: Boolean,
     ): Product =
         copy(
@@ -82,6 +85,7 @@ data class Product(
             defaultShelfLifeMonths = defaultShelfLifeMonths,
             minQuantity = minQuantity,
             notes = notes?.trim()?.takeIf { it.isNotEmpty() },
+            imageUrl = imageUrl?.trim()?.takeIf { it.isNotEmpty() },
             archived = archived,
             updatedAt = LocalDateTime.now(),
         )
@@ -105,6 +109,14 @@ data class Product(
 
     companion object {
         const val MAX_SHELF_LIFE_MONTHS = 600
+        const val MAX_IMAGE_URL_LENGTH = 500
+
+        /** A link a browser can show as an <img>: http(s), no whitespace, bounded length. */
+        fun isHttpUrl(url: String): Boolean =
+            url.length <= MAX_IMAGE_URL_LENGTH &&
+                (url.startsWith("https://") || url.startsWith("http://")) &&
+                url.length > 8 &&
+                url.none { it.isWhitespace() }
 
         fun create(
             pantryId: PantryId,
@@ -116,6 +128,7 @@ data class Product(
             defaultShelfLifeMonths: Int? = null,
             minQuantity: Int = 0,
             notes: String? = null,
+            imageUrl: String? = null,
             createdByUserId: UserId? = null,
         ): Product {
             val now = LocalDateTime.now()
@@ -130,6 +143,7 @@ data class Product(
                 defaultShelfLifeMonths = defaultShelfLifeMonths,
                 minQuantity = minQuantity,
                 notes = notes?.trim()?.takeIf { it.isNotEmpty() },
+                imageUrl = imageUrl?.trim()?.takeIf { it.isNotEmpty() },
                 archived = false,
                 createdByUserId = createdByUserId,
                 createdAt = now,

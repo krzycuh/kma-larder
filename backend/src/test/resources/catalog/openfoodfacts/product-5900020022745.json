@@ -7,6 +7,18 @@
     "product_name_pl": "Pomidory krojone bez skórki w soku pomidorowym",
     "brands": "Pudliszki, Heinz",
     "quantity": "400 g",
-    "image_front_small_url": "http://images.openfoodfacts.org/images/products/590/002/002/2745/front_pl.4.200.jpg"
+    "image_front_small_url": "http://images.openfoodfacts.org/images/products/590/002/002/2745/front_pl.4.200.jpg",
+    "categories_tags": [
+      "en:plant-based-foods-and-beverages",
+      "en:plant-based-foods",
+      "en:fruits-and-vegetables-based-foods",
+      "en:vegetables-based-foods",
+      "en:canned-foods",
+      "en:canned-plant-based-foods",
+      "en:canned-vegetables",
+      "en:tomatoes-and-their-products",
+      "en:canned-tomatoes",
+      "en:diced-tomatoes"
+    ]
   }
 }

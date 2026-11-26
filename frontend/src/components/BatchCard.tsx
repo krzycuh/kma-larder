@@ -5,7 +5,7 @@ import { t } from '../i18n';
 import type { Batch, Product } from '../types/stock';
 import { formatApproximateDate, formatDate } from '../utils/format';
 import { describeDaysLeft, FRESHNESS_BORDER_CLASSES } from '../utils/freshness';
-import { CATEGORY_ICONS } from '../utils/categories';
+import { ProductThumb } from './ProductThumb';
 
 interface BatchCardProps {
   batch: Batch;
@@ -27,12 +27,12 @@ export function BatchCard({ batch, product, showProduct = false, extra }: BatchC
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {showProduct && (
-            <Link to={`/products/${product.id}`} className="block truncate font-semibold text-gray-900 hover:text-blue-700">
-              <span className="mr-1.5" aria-hidden="true">
-                {CATEGORY_ICONS[product.category]}
+            <Link to={`/products/${product.id}`} className="flex items-center gap-2 font-semibold text-gray-900 hover:text-blue-700">
+              <ProductThumb product={product} className="h-8 w-8" />
+              <span className="min-w-0 truncate">
+                {product.name}
+                {product.packageSize && <span className="ml-1 text-sm font-normal text-gray-500">{product.packageSize}</span>}
               </span>
-              {product.name}
-              {product.packageSize && <span className="ml-1 text-sm font-normal text-gray-500">{product.packageSize}</span>}
             </Link>
           )}
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-700">

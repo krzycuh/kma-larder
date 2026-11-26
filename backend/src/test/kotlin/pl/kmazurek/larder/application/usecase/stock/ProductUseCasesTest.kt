@@ -33,7 +33,16 @@ class ProductUseCasesTest {
         barcode: String? = null,
         shelfLife: Int? = null,
         minQuantity: Int = 0,
-    ) = ProductRequest(name, kind, category, barcode = barcode, defaultShelfLifeMonths = shelfLife, minQuantity = minQuantity)
+        imageUrl: String? = null,
+    ) = ProductRequest(
+        name,
+        kind,
+        category,
+        barcode = barcode,
+        defaultShelfLifeMonths = shelfLife,
+        minQuantity = minQuantity,
+        imageUrl = imageUrl,
+    )
 
     @Test
     fun `creates a product for a member, refuses outsiders`() {
@@ -45,6 +54,22 @@ class ProductUseCasesTest {
         assertEquals(true, dto.belowMinimum)
         assertEquals(FreshnessStatus.UNKNOWN, dto.freshness)
         assertThrows<PantryAccessDeniedException> { create.execute(s.outsider.id, s.pantry.id, request("Cukier")) }
+    }
+
+    @Test
+    fun `keeps a picture link, trims it and rejects one that is not http(s)`() {
+        val dto =
+            create.execute(
+                s.owner.id,
+                s.pantry.id,
+                request("Pomidory", imageUrl = " https://images.openfoodfacts.org/p/front.200.jpg "),
+            )
+        assertEquals("https://images.openfoodfacts.org/p/front.200.jpg", dto.imageUrl)
+
+        val cleared = update.execute(s.owner.id, ProductId.fromString(dto.id), request("Pomidory", imageUrl = ""))
+        assertNull(cleared.imageUrl)
+
+        assertThrows<IllegalArgumentException> { create.execute(s.owner.id, s.pantry.id, request("Groszek", imageUrl = "ftp://x/y.jpg")) }
     }
 
     @Test

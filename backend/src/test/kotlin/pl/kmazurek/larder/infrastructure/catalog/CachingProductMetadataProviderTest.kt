@@ -25,7 +25,7 @@ class CachingProductMetadataProviderTest {
 
     @Test
     fun `answers and misses are cached, failures are not`() {
-        answer = { ProductMetadata(code.value, "Pomidory", null, null, null, "OPEN_FOOD_FACTS") }
+        answer = { ProductMetadata(code.value, "Pomidory", null, null, null, source = "OPEN_FOOD_FACTS") }
         assertEquals("Pomidory", provider.lookupByBarcode(code)?.name)
         assertEquals("Pomidory", provider.lookupByBarcode(code)?.name)
         assertEquals(1, calls)

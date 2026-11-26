@@ -14,7 +14,8 @@ import pl.kmazurek.larder.domain.model.stock.Barcode
 /**
  * Open Food Facts adapter: GET /api/v2/product/{barcode}?fields=...
  * Known code: {"status":1,"product":{...}}; unknown code: HTTP 404 (older servers answer 200 with "status":0).
- * The Polish name is preferred when the database has one.
+ * The Polish name is preferred when the database has one; the category tags are mapped to a pantry category
+ * by [OpenFoodFactsCategoryMapper].
  */
 class OpenFoodFactsProductMetadataProvider(
     private val restClient: RestClient,
@@ -48,13 +49,14 @@ class OpenFoodFactsProductMetadataProvider(
             brand = product.brands?.split(",")?.map { it.trim() }?.firstOrNull { it.isNotEmpty() },
             packageSize = product.quantity?.trim()?.takeIf { it.isNotEmpty() },
             imageUrl = product.imageFrontSmallUrl?.let(::toHttps),
+            category = OpenFoodFactsCategoryMapper.categoryFor(product.categoriesTags),
             source = SOURCE,
         )
     }
 
     companion object {
         const val SOURCE = "OPEN_FOOD_FACTS"
-        private const val FIELDS = "code,status,product_name,product_name_pl,brands,quantity,image_front_small_url"
+        private const val FIELDS = "code,status,product_name,product_name_pl,brands,quantity,image_front_small_url,categories_tags"
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -70,6 +72,7 @@ class OpenFoodFactsProductMetadataProvider(
         val brands: String? = null,
         val quantity: String? = null,
         @JsonProperty("image_front_small_url") val imageFrontSmallUrl: String? = null,
+        @JsonProperty("categories_tags") val categoriesTags: List<String>? = null,
     )
 }
 

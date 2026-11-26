@@ -34,6 +34,8 @@ class ProductJpaEntity(
     var minQuantity: Int = 0,
     @Column(columnDefinition = "TEXT")
     var notes: String? = null,
+    @Column(name = "image_url", length = 500)
+    var imageUrl: String? = null,
     @Column(nullable = false)
     var archived: Boolean = false,
     @Column(name = "created_by_user_id", columnDefinition = "UUID")

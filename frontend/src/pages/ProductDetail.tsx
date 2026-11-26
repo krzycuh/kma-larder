@@ -15,6 +15,7 @@ import { t } from '../i18n';
 import { formatDate, currentYear } from '../utils/format';
 import { getApiErrorMessage } from '../utils/apiError';
 import { CATEGORY_ICONS } from '../utils/categories';
+import { ProductThumb } from '../components/ProductThumb';
 import { listUrl } from '../utils/listUrl';
 
 /**
@@ -82,15 +83,18 @@ export function ProductDetail() {
 
       <section className="rounded-lg bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-4xl font-bold text-gray-900">
-              {product.quantity} <span className="text-base font-normal text-gray-500">szt.</span>
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
-              {product.quantity > 0 && <FreshnessBadge status={product.freshness} />}
-              {product.nextExpiresOn && <span>{t.stock.nextExpiry(formatDate(product.nextExpiresOn))}</span>}
-              {product.belowMinimum && <span className="font-medium text-blue-700">{t.product.belowMinimum(product.minQuantity - product.quantity)}</span>}
-              {product.archived && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">{t.product.archived}</span>}
+          <div className="flex items-center gap-4">
+            {product.imageUrl && <ProductThumb product={product} size="lg" />}
+            <div>
+              <p className="text-4xl font-bold text-gray-900">
+                {product.quantity} <span className="text-base font-normal text-gray-500">szt.</span>
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                {product.quantity > 0 && <FreshnessBadge status={product.freshness} />}
+                {product.nextExpiresOn && <span>{t.stock.nextExpiry(formatDate(product.nextExpiresOn))}</span>}
+                {product.belowMinimum && <span className="font-medium text-blue-700">{t.product.belowMinimum(product.minQuantity - product.quantity)}</span>}
+                {product.archived && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">{t.product.archived}</span>}
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
