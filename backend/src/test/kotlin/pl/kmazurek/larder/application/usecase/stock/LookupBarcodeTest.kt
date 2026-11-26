@@ -34,8 +34,8 @@ class LookupBarcodeTest {
             s.pantry.id,
             ProductRequest("Fasola", ProductKind.STORE_BOUGHT, ProductCategory.CANNED, barcode = "5901234123457"),
         )
-        known["5901234123457"] = ProductMetadata("5901234123457", "Fasola czerwona", "Marka", "400 g", null, "OPEN_FOOD_FACTS")
-        known["96385074"] = ProductMetadata("96385074", "Sok", null, "1 l", null, "OPEN_FOOD_FACTS")
+        known["5901234123457"] = ProductMetadata("5901234123457", "Fasola czerwona", "Marka", "400 g", null, source = "OPEN_FOOD_FACTS")
+        known["96385074"] = ProductMetadata("96385074", "Sok", null, "1 l", null, ProductCategory.BEVERAGES, "OPEN_FOOD_FACTS")
 
         val both = lookup.execute(s.owner.id, s.pantry.id, "590 1234 12345 7")
         assertEquals("Fasola", both.product?.name)
@@ -44,6 +44,7 @@ class LookupBarcodeTest {
         val external = lookup.execute(s.owner.id, s.pantry.id, "96385074")
         assertNull(external.product)
         assertEquals("1 l", external.metadata?.packageSize)
+        assertEquals(ProductCategory.BEVERAGES, external.metadata?.category)
     }
 
     @Test

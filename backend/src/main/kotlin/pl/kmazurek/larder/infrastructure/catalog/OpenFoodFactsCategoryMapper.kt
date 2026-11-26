@@ -1,0 +1,237 @@
+package pl.kmazurek.larder.infrastructure.catalog
+
+import pl.kmazurek.larder.domain.model.stock.ProductCategory
+
+/**
+ * Turns Open Food Facts category tags ("en:canned-tomatoes", "en:legumes", "pl:ogorki-kiszone") into one of the
+ * pantry's categories. Tags are hyphen-separated English (or local) words; every tag of the product is looked at,
+ * and the first pantry category in [RULES] order that any tag names wins. The order settles the typical overlaps:
+ * frozen peas are frozen, not vegetables; canned beans are canned, not dried legumes; pasta sauce is a sauce, not pasta;
+ * rice drink is a drink, not rice. Nothing matched means null – the user keeps the default.
+ */
+object OpenFoodFactsCategoryMapper {
+    private val RULES: List<Pair<ProductCategory, Set<String>>> =
+        listOf(
+            ProductCategory.FROZEN to
+                setOf("frozen", "ice"),
+            ProductCategory.PRESERVES to
+                setOf(
+                    "jam",
+                    "jams",
+                    "marmalade",
+                    "marmalades",
+                    "preserve",
+                    "preserves",
+                    "pickle",
+                    "pickles",
+                    "pickled",
+                    "chutney",
+                    "chutneys",
+                    "compote",
+                    "compotes",
+                    "sauerkraut",
+                    "fermented",
+                    "gherkins",
+                ),
+            ProductCategory.OILS_SAUCES to
+                setOf(
+                    "oil",
+                    "oils",
+                    "vinegar",
+                    "vinegars",
+                    "sauce",
+                    "sauces",
+                    "ketchup",
+                    "ketchups",
+                    "mustard",
+                    "mustards",
+                    "mayonnaise",
+                    "mayonnaises",
+                    "dressing",
+                    "dressings",
+                    "pesto",
+                    "pestos",
+                    "passata",
+                ),
+            ProductCategory.CANNED to
+                setOf("canned", "tinned", "cans"),
+            ProductCategory.HONEY to
+                setOf("honey", "honeys"),
+            ProductCategory.BEVERAGES to
+                setOf(
+                    "beverage",
+                    "beverages",
+                    "water",
+                    "waters",
+                    "juice",
+                    "juices",
+                    "soda",
+                    "sodas",
+                    "drink",
+                    "drinks",
+                    "tea",
+                    "teas",
+                    "coffee",
+                    "coffees",
+                    "beer",
+                    "beers",
+                    "wine",
+                    "wines",
+                    "nectar",
+                    "nectars",
+                    "lemonade",
+                    "lemonades",
+                ),
+            ProductCategory.PASTA_RICE to
+                setOf(
+                    "pasta",
+                    "pastas",
+                    "rice",
+                    "rices",
+                    "noodle",
+                    "noodles",
+                    "couscous",
+                    "spaghetti",
+                    "macaroni",
+                    "gnocchi",
+                    "lasagne",
+                    "lasagna",
+                    "tagliatelle",
+                    "penne",
+                    "vermicelli",
+                ),
+            ProductCategory.SWEETS_SNACKS to
+                setOf(
+                    "chocolate",
+                    "chocolates",
+                    "candy",
+                    "candies",
+                    "sweet",
+                    "sweets",
+                    "confectionery",
+                    "confectioneries",
+                    "biscuit",
+                    "biscuits",
+                    "cookie",
+                    "cookies",
+                    "crisp",
+                    "crisps",
+                    "chip",
+                    "chips",
+                    "snack",
+                    "snacks",
+                    "wafer",
+                    "wafers",
+                    "bar",
+                    "bars",
+                    "cake",
+                    "cakes",
+                    "gummies",
+                    "lollipops",
+                    "pralines",
+                    "halva",
+                    "gums",
+                    "crackers",
+                    "pretzels",
+                    "popcorn",
+                ),
+            ProductCategory.FLOUR_GRAINS to
+                setOf(
+                    "flour",
+                    "flours",
+                    "groat",
+                    "groats",
+                    "grain",
+                    "grains",
+                    "cereal",
+                    "cereals",
+                    "semolina",
+                    "oat",
+                    "oats",
+                    "flakes",
+                    "buckwheat",
+                    "millet",
+                    "bulgur",
+                    "quinoa",
+                    "barley",
+                    "bran",
+                    "muesli",
+                    "granola",
+                    "porridge",
+                ),
+            ProductCategory.SPICES_BAKING to
+                setOf(
+                    "spice",
+                    "spices",
+                    "herb",
+                    "herbs",
+                    "salt",
+                    "salts",
+                    "sugar",
+                    "sugars",
+                    "baking",
+                    "yeast",
+                    "yeasts",
+                    "vanilla",
+                    "cocoa",
+                    "cocoas",
+                    "seasoning",
+                    "seasonings",
+                    "pepper",
+                    "cinnamon",
+                    "sweeteners",
+                    "starch",
+                    "starches",
+                    "gelatin",
+                    "bouillon",
+                    "bouillons",
+                    "stock",
+                    "stocks",
+                    "cubes",
+                ),
+            ProductCategory.DRIED to
+                setOf(
+                    "dried",
+                    "nut",
+                    "nuts",
+                    "seed",
+                    "seeds",
+                    "raisin",
+                    "raisins",
+                    "almond",
+                    "almonds",
+                    "walnut",
+                    "walnuts",
+                    "hazelnut",
+                    "hazelnuts",
+                    "peanut",
+                    "peanuts",
+                    "cashew",
+                    "cashews",
+                    "pistachio",
+                    "pistachios",
+                    "legume",
+                    "legumes",
+                    "bean",
+                    "beans",
+                    "lentil",
+                    "lentils",
+                    "chickpea",
+                    "chickpeas",
+                    "dates",
+                    "prunes",
+                ),
+        )
+
+    private val LANGUAGE_PREFIX = Regex("^[a-z]{2,3}:")
+
+    fun categoryFor(tags: List<String>?): ProductCategory? {
+        if (tags.isNullOrEmpty()) return null
+        val words =
+            tags
+                .flatMap { tag -> tag.trim().lowercase().replace(LANGUAGE_PREFIX, "").split('-') }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        return RULES.firstOrNull { (_, keywords) -> words.any { it in keywords } }?.first
+    }
+}

@@ -15,6 +15,7 @@ import { t } from '../i18n';
 import { PRODUCT_CATEGORIES, type ProductCategory, type ProductKind, type ProductSort } from '../types/stock';
 import { formatDate } from '../utils/format';
 import { CATEGORY_ICONS } from '../utils/categories';
+import { ProductThumb } from '../components/ProductThumb';
 
 const PAGE_SIZE = 50;
 const SORTS: ProductSort[] = ['name', 'expiry', 'quantity'];
@@ -152,9 +153,7 @@ export function Stock() {
                     product.archived ? 'opacity-60' : ''
                   }`}
                 >
-                  <span className="text-2xl" aria-hidden="true">
-                    {CATEGORY_ICONS[product.category]}
-                  </span>
+                  <ProductThumb product={product} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-gray-900">
                       {product.name}

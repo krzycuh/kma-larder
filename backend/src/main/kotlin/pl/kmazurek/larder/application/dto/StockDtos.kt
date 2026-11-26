@@ -76,6 +76,7 @@ data class ProductDto(
     val defaultShelfLifeMonths: Int?,
     val minQuantity: Int,
     val notes: String?,
+    val imageUrl: String?,
     val archived: Boolean,
     val quantity: Int,
     val batchCount: Int,
@@ -100,6 +101,7 @@ data class ProductDto(
             defaultShelfLifeMonths = product.defaultShelfLifeMonths,
             minQuantity = product.minQuantity,
             notes = product.notes,
+            imageUrl = product.imageUrl,
             archived = product.archived,
             quantity = stock.quantity,
             batchCount = stock.batchCount,
@@ -274,6 +276,8 @@ data class ProductRequest(
     val minQuantity: Int = 0,
     @field:Size(max = 2000, message = "Notes cannot exceed 2000 characters")
     val notes: String? = null,
+    @field:Size(max = 500, message = "Image URL cannot exceed 500 characters")
+    val imageUrl: String? = null,
     val archived: Boolean = false,
 )
 
@@ -317,11 +321,21 @@ data class ProductMetadataDto(
     val brand: String?,
     val packageSize: String?,
     val imageUrl: String?,
+    /** The pantry category the external database's tags point at; null when they do not match any */
+    val category: ProductCategory?,
     val source: String,
 ) {
     companion object {
         fun fromMetadata(metadata: ProductMetadata) =
-            ProductMetadataDto(metadata.barcode, metadata.name, metadata.brand, metadata.packageSize, metadata.imageUrl, metadata.source)
+            ProductMetadataDto(
+                metadata.barcode,
+                metadata.name,
+                metadata.brand,
+                metadata.packageSize,
+                metadata.imageUrl,
+                metadata.category,
+                metadata.source,
+            )
     }
 }
 

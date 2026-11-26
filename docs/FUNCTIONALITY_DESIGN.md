@@ -64,6 +64,7 @@ data class Product(
     val defaultShelfLifeMonths: Int?,    // przydatność domowych przetworów od daty zrobienia
     val minQuantity: Int = 0,            // poniżej tej liczby produkt trafia na listę zakupów; 0 = bez minimum
     val notes: String? = null,
+    val imageUrl: String? = null,        // link http(s) do miniatury (z Open Food Facts lub wpisany); zdjęcia nie są przechowywane
     val archived: Boolean = false,       // znika z list, historia zostaje
     ...
 )
@@ -113,7 +114,7 @@ Autoryzacja: każda operacja wymaga członkostwa w spiżarni produktu / partii (
 
 **Dodawanie**
 - Wpisuję nazwę: podpowiedź z moich produktów (bez diakrytyków, „ogor” znajduje „Ogórki kiszone”) albo nowy produkt. Podaję ilość (duże −/+), datę z opakowania w tylu polach, ile widzę (rok / miesiąc / dzień), dla przetworów datę zrobienia.
-- Skanuję kod EAN: jeśli produkt z tym kodem już jest w spiżarni, zostaje wybrany; jeśli nie, nazwę i opakowanie podpowiada Open Food Facts.
+- Skanuję kod EAN: jeśli produkt z tym kodem już jest w spiżarni, zostaje wybrany; jeśli nie, nazwę, opakowanie, miniaturę i kategorię podpowiada Open Food Facts. Kategoria z tagów Open Food Facts wypełnia tylko domyślne „Inne” i jest do sprawdzenia; miniatura to link do małego zdjęcia, w listach pokazywany zamiast piktogramu kategorii (piktogram wraca, gdy zdjęcia nie da się wczytać).
 - Robię zdjęcie nadruku z datą: aplikacja rozpoznaje daty w telefonie i pokazuje je do wyboru. Nic nie zapisuje się bez mojego tapnięcia.
 - „Dodaj kolejny” zostawia mnie w formularzu, bo zwykle rozpakowuję całe zakupy.
 

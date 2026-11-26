@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { ProductPicker } from '../components/ProductPicker';
 import { ProductFields } from '../components/ProductFields';
+import { ProductThumb } from '../components/ProductThumb';
 import { inputClasses } from '../utils/formStyles';
 import { ApproximateDateInput } from '../components/ApproximateDateInput';
 import { QuantityStepper } from '../components/QuantityStepper';
@@ -46,6 +47,9 @@ export function AddStock() {
   const [name, setName] = useState('');
   const [selected, setSelected] = useState<Product | null>(null);
   const [fields, setFields] = useState<ProductFieldsValue>(DEFAULT_PRODUCT_FIELDS);
+  // The latest fields for the lookup callback, which runs after the request and must not read a stale render
+  const fieldsRef = useRef(fields);
+  fieldsRef.current = fields;
   const [quantity, setQuantity] = useState(1);
   const [bestBefore, setBestBefore] = useState<ApproximateDateInputValue>(EMPTY_DATE_INPUT);
   const [producedOn, setProducedOn] = useState<ApproximateDateInputValue>(EMPTY_DATE_INPUT);
@@ -127,8 +131,18 @@ export function AddStock() {
         const meta = result.metadata;
         setSelected(null);
         setName(meta.brand && !meta.name.toLowerCase().includes(meta.brand.toLowerCase()) ? `${meta.name} ${meta.brand}` : meta.name);
-        setFields((f) => ({ ...f, barcode: meta.barcode, kind: 'STORE_BOUGHT', packageSize: f.packageSize || meta.packageSize || '' }));
-        setLookupHint(t.barcode.found(t.barcode.sourceName[meta.source] ?? meta.source));
+        // The suggested category only fills the default; a category the user already picked stays
+        const suggestCategory = !!meta.category && fieldsRef.current.category === 'OTHER';
+        setFields((f) => ({
+          ...f,
+          barcode: meta.barcode,
+          kind: 'STORE_BOUGHT',
+          packageSize: f.packageSize || meta.packageSize || '',
+          imageUrl: meta.imageUrl ?? f.imageUrl,
+          category: suggestCategory && meta.category ? meta.category : f.category,
+        }));
+        const source = t.barcode.sourceName[meta.source] ?? meta.source;
+        setLookupHint(suggestCategory && meta.category ? t.barcode.foundWithCategory(source, t.product.categoryLabel[meta.category]) : t.barcode.found(source));
       }
     },
     onError: (err) => {
@@ -222,16 +236,20 @@ export function AddStock() {
             autoFocus={!prefillId}
           />
           {lookupHint && (
-            <p className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800" role="status">
-              {lookupHint}
+            <p className="flex items-center gap-3 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800" role="status">
+              {!selected && fields.imageUrl && <ProductThumb product={{ category: fields.category, imageUrl: fields.imageUrl }} size="md" />}
+              <span>{lookupHint}</span>
             </p>
           )}
           {!selected && <ProductFields value={fields} onChange={setFields} errors={errors} full={false} barcodeAction={scanButton} />}
           {selected && (
-            <p className="text-sm text-gray-600">
-              {t.product.kindLabel[selected.kind]} · {t.product.categoryLabel[selected.category]}
-              {selected.packageSize ? ` · ${selected.packageSize}` : ''} · {t.product.inStock(selected.quantity)}
-            </p>
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <ProductThumb product={selected} size="md" />
+              <p>
+                {t.product.kindLabel[selected.kind]} · {t.product.categoryLabel[selected.category]}
+                {selected.packageSize ? ` · ${selected.packageSize}` : ''} · {t.product.inStock(selected.quantity)}
+              </p>
+            </div>
           )}
         </section>
 

@@ -13,6 +13,7 @@ import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.web.client.RestClient
 import pl.kmazurek.larder.application.service.ProductMetadataUnavailableException
 import pl.kmazurek.larder.domain.model.stock.Barcode
+import pl.kmazurek.larder.domain.model.stock.ProductCategory
 import java.net.http.HttpClient
 import java.time.Duration
 
@@ -50,9 +51,11 @@ class OpenFoodFactsProductMetadataProviderTest {
         assertEquals("Pudliszki", metadata.brand)
         assertEquals("400 g", metadata.packageSize)
         assertEquals("https://images.openfoodfacts.org/images/products/590/002/002/2745/front_pl.4.200.jpg", metadata.imageUrl)
+        assertEquals(ProductCategory.CANNED, metadata.category)
         assertEquals("OPEN_FOOD_FACTS", metadata.source)
         val request = server.takeRequest()
         assertTrue(request.path!!.startsWith("/api/v2/product/5900020022745?fields="))
+        assertTrue(request.path!!.contains("categories_tags"))
     }
 
     @Test
@@ -65,6 +68,7 @@ class OpenFoodFactsProductMetadataProviderTest {
         assertNull(metadata.brand)
         assertNull(metadata.packageSize)
         assertNull(metadata.imageUrl)
+        assertNull(metadata.category)
     }
 
     @Test

@@ -174,6 +174,7 @@ class CreateProduct(
                 defaultShelfLifeMonths = request.defaultShelfLifeMonths,
                 minQuantity = request.minQuantity,
                 notes = request.notes,
+                imageUrl = parseImageUrl(request.imageUrl),
                 createdByUserId = userId,
             )
         return access.productDto(productRepository.save(product), emptyList())
@@ -216,6 +217,7 @@ class UpdateProduct(
                 defaultShelfLifeMonths = request.defaultShelfLifeMonths,
                 minQuantity = request.minQuantity,
                 notes = request.notes,
+                imageUrl = parseImageUrl(request.imageUrl),
                 archived = request.archived,
             )
         val saved = productRepository.save(updated)
@@ -244,6 +246,12 @@ class DeleteProduct(
         access.loadProduct(userId, productId)
         productRepository.deleteById(productId)
     }
+}
+
+internal fun parseImageUrl(raw: String?): String? {
+    val trimmed = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    require(Product.isHttpUrl(trimmed)) { "Invalid image URL" }
+    return trimmed
 }
 
 internal fun parseBarcode(raw: String?): Barcode? {

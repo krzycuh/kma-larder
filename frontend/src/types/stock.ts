@@ -38,6 +38,8 @@ export interface Product {
   defaultShelfLifeMonths: number | null;
   minQuantity: number;
   notes: string | null;
+  /** Link to a small product photo (Open Food Facts or typed in); shown as a thumbnail, never stored here */
+  imageUrl: string | null;
   archived: boolean;
   /** Units currently in stock (sum over batches) */
   quantity: number;
@@ -138,6 +140,7 @@ export interface ProductRequest {
   defaultShelfLifeMonths?: number | null;
   minQuantity?: number;
   notes?: string | null;
+  imageUrl?: string | null;
   archived?: boolean;
 }
 
@@ -177,6 +180,8 @@ export interface BarcodeMetadata {
   brand: string | null;
   packageSize: string | null;
   imageUrl: string | null;
+  /** The pantry category the database's tags point at; null when nothing matched */
+  category: ProductCategory | null;
   source: string;
 }
 
