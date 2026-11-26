@@ -33,11 +33,13 @@ object PantryMapper {
             pantryId = PantryId(jpa.key.pantryId),
             userId = UserId(jpa.key.userId),
             role = PantryRole.valueOf(jpa.role),
+            isDefault = jpa.isDefault,
         )
 
     fun memberToJpa(domain: PantryMember) =
         PantryMemberJpaEntity(
             key = PantryMemberKey(domain.pantryId.value, domain.userId.value),
             role = domain.role.name,
+            isDefault = domain.isDefault,
         )
 }

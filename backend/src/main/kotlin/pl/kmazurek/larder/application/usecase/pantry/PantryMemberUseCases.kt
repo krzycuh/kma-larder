@@ -1,15 +1,17 @@
 package pl.kmazurek.larder.application.usecase.pantry
 
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import pl.kmazurek.larder.application.dto.PantryDto
 import pl.kmazurek.larder.application.dto.PantryMemberDto
-import pl.kmazurek.larder.domain.model.pantry.Pantry
 import pl.kmazurek.larder.domain.model.pantry.PantryId
 import pl.kmazurek.larder.domain.model.pantry.PantryMember
 import pl.kmazurek.larder.domain.model.pantry.PantryRole
 import pl.kmazurek.larder.domain.model.user.Email
 import pl.kmazurek.larder.domain.model.user.UserId
 import pl.kmazurek.larder.domain.repository.PantryRepository
+import pl.kmazurek.larder.domain.repository.ProductFilter
+import pl.kmazurek.larder.domain.repository.ProductRepository
 import pl.kmazurek.larder.domain.repository.UserRepository
 import pl.kmazurek.larder.domain.service.PantryAccessPolicy
 
@@ -38,15 +40,19 @@ class ListPantryMembers(
 }
 
 /**
- * Use Case (owner): add an existing, active user to the pantry by e-mail
+ * Use Case (owner): add an existing, active user to the pantry by e-mail.
+ * A pantry of their own that they never used (no products, nobody else in it) is removed on the way: it would only
+ * stand between them and the household's pantry they are joining.
  */
 @Service
 class InvitePantryMember(
     private val pantryRepository: PantryRepository,
     private val userRepository: UserRepository,
+    private val productRepository: ProductRepository,
     private val pantryAccessGuard: PantryAccessGuard,
     private val accessPolicy: PantryAccessPolicy,
 ) {
+    @Transactional
     fun execute(
         ownerId: UserId,
         pantryId: PantryId,
@@ -60,7 +66,19 @@ class InvitePantryMember(
             throw AlreadyPantryMemberException("${user.name} is already a member of this pantry")
         }
         pantryRepository.addMember(PantryMember(pantryId, user.id, PantryRole.MEMBER))
+        removeUnusedOwnPantries(user.id, joined = pantryId)
         return PantryMemberDto(user.id.toString(), user.name, user.email.value, PantryRole.MEMBER)
+    }
+
+    private fun removeUnusedOwnPantries(
+        userId: UserId,
+        joined: PantryId,
+    ) {
+        pantryRepository.findByMember(userId)
+            .filter { it.ownerId == userId && it.id != joined }
+            .filter { pantryRepository.findMembers(it.id).size == 1 }
+            .filter { productRepository.findByPantry(it.id, ProductFilter(includeArchived = true)).isEmpty() }
+            .forEach { pantryRepository.delete(it.id) }
     }
 }
 
@@ -109,17 +127,4 @@ class RenamePantry(
         val saved = pantryRepository.save(pantry.rename(name))
         return PantryDto.fromDomain(saved, PantryRole.OWNER, pantryRepository.findMembers(pantryId).size)
     }
-}
-
-private fun requireOwner(
-    guard: PantryAccessGuard,
-    accessPolicy: PantryAccessPolicy,
-    userId: UserId,
-    pantryId: PantryId,
-): Pantry {
-    val pantry = guard.requireAccess(userId, pantryId)
-    if (!accessPolicy.canManageMembers(userId, pantryId)) {
-        throw PantryAccessDeniedException("Only the owner can manage this pantry")
-    }
-    return pantry
 }

@@ -15,6 +15,7 @@ import './App.css';
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
 const Profile = lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })));
+const Pantries = lazy(() => import('./pages/Pantries').then((m) => ({ default: m.Pantries })));
 const PantryMembers = lazy(() => import('./pages/PantryMembers').then((m) => ({ default: m.PantryMembers })));
 const Stock = lazy(() => import('./pages/Stock').then((m) => ({ default: m.Stock })));
 const AddStock = lazy(() => import('./pages/AddStock').then((m) => ({ default: m.AddStock })));
@@ -68,6 +69,8 @@ function App() {
                   <Route path="/batches/:id/edit" element={<BatchForm />} />
                   <Route path="/expiring" element={<Expiring />} />
                   <Route path="/replenish" element={<Replenish />} />
+                  <Route path="/pantries" element={<Pantries />} />
+                  <Route path="/pantries/:pantryId/members" element={<PantryMembers />} />
                   <Route path="/members" element={<PantryMembers />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route

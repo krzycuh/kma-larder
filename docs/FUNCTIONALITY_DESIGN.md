@@ -13,7 +13,7 @@ Spiżarnia jest z natury wspólna dla gospodarstwa: jedna spiżarnia, kilkoro do
 
 | Rola | Uprawnienia |
 |------|-------------|
-| `USER` | Własna spiżarnia (tworzona przy rejestracji) i spiżarnie, do których został dodany; produkty, partie, zużycie, lista zakupów |
+| `USER` | Spiżarnie, które założył, i te, do których został dodany; produkty, partie, zużycie, lista zakupów |
 | `ADMIN` | To co `USER` + zarządzanie użytkownikami (lista, blokowanie, reset hasła, podgląd konta), ręczne wysłanie raportu ntfy |
 
 Rejestracja: otwarta (z rate-limitingiem w nginx), z możliwością wyłączenia flagą `app.registration.enabled` po założeniu kont domownikom.
@@ -37,7 +37,7 @@ Rejestracja: otwarta (z rate-limitingiem w nginx), z możliwością wyłączenia
 
 Zasady:
 
-- **Pantry** to gospodarstwo: właściciel i domownicy. Każdy użytkownik dostaje własną spiżarnię przy rejestracji; domownik dołącza do cudzej po e-mailu. Dostęp sprawdzany w jednym miejscu: `PantryAccessPolicy`.
+- **Pantry** to gospodarstwo: właściciel i domownicy. Nowe konto nie ma spiżarni: użytkownik zakłada ją sam (może mieć kilka) albo właściciel dodaje go do swojej po e-mailu; przy dodaniu znika jego własna, nigdy nieużyta spiżarnia (bez produktów i bez innych domowników). Każdy wybiera swoją spiżarnię domyślną (`pantry_members.is_default`), a bez wyboru jest nią najstarsza. Dostęp sprawdzany w jednym miejscu: `PantryAccessPolicy`.
 - **Stock** należy do spiżarni (`Product.pantryId`, `Batch.pantryId`). Produkt jest słownikiem **jednej spiżarni**, nie wspólnym katalogiem wszystkich użytkowników: nie ma scalania duplikatów między gospodarstwami, a „Ogórki kiszone” u sąsiada to inny produkt.
 - Integracje zewnętrzne to wyłącznie porty w warstwie aplikacji: `ProductMetadataProvider` (Open Food Facts) i `NotificationService` (ntfy). OCR nie ma w backendzie w ogóle – działa w przeglądarce (ADR 003).
 
@@ -48,7 +48,7 @@ Zasady:
 ### 3.1 Pantry
 
 - `Pantry(id, name, ownerId, createdAt, updatedAt)`, `PantryMember(pantryId, userId, role: OWNER | MEMBER)`.
-- Każdy członek: produkty, partie, zużycie, listy. Właściciel dodatkowo: domownicy i nazwa. Właściciela nie da się usunąć.
+- Każdy członek: produkty, partie, zużycie, listy. Właściciel dodatkowo: domownicy, nazwa i usunięcie spiżarni (z całą zawartością). Właściciela nie da się usunąć.
 
 ### 3.2 Stock
 
@@ -144,7 +144,10 @@ Autoryzacja: każda operacja wymaga członkostwa w spiżarni produktu / partii (
 
 | Metoda | Ścieżka | Opis |
 |---|---|---|
-| GET | `/api/pantries` | moje spiżarnie z rolą i liczbą domowników |
+| GET | `/api/pantries` | moje spiżarnie z rolą, liczbą domowników i znacznikiem domyślnej (domyślna pierwsza) |
+| POST | `/api/pantries` | założenie spiżarni (zakładający zostaje właścicielem) |
+| DELETE | `/api/pantries/{id}` | usunięcie spiżarni z zawartością (właściciel) |
+| PUT | `/api/pantries/{id}/default` | ustawienie mojej domyślnej spiżarni |
 | PATCH | `/api/pantries/{id}` | nazwa (właściciel) |
 | GET / POST / DELETE | `/api/pantries/{id}/members[/{userId}]` | domownicy |
 | GET | `/api/pantries/{id}/products?search&category&kind&includeArchived&sort&page&pageSize` | stan |

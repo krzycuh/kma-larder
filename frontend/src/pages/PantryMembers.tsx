@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { pantriesApi } from '../api/pantries';
@@ -9,6 +9,7 @@ import { PantrySwitcher } from '../components/PantrySwitcher';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { EmptyState } from '../components/EmptyState';
+import { NoPantry } from '../components/NoPantry';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { useAuth } from '../hooks/useAuth';
 import { useCurrentPantry } from '../hooks/usePantries';
@@ -29,15 +30,18 @@ function inviteErrorMessage(error: unknown): string {
 }
 
 /**
- * /members: who uses the current pantry. The owner renames it, adds members by e-mail and removes them;
- * a member can leave.
+ * /pantries/:pantryId/members (from the pantry list) or /members (the current pantry): who uses the pantry.
+ * The owner renames it, adds members by e-mail and removes them; a member can leave.
  */
 export function PantryMembers() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
   const { user } = useAuth();
-  const { pantry, isLoading: pantryLoading } = useCurrentPantry();
+  const { pantryId } = useParams();
+  const { pantry: currentPantry, pantries, isLoading: pantryLoading } = useCurrentPantry();
+  const pantry = pantryId ? (pantries.find((item) => item.id === pantryId) ?? null) : currentPantry;
+  const backTo = pantryId ? '/pantries' : '/';
   const isOwner = pantry?.myRole === 'OWNER';
 
   const [name, setName] = useState('');
@@ -84,11 +88,11 @@ export function PantryMembers() {
     onSuccess: (_, member) => {
       setRemoving(null);
       if (member.userId === user?.id) {
-        // Left the pantry: drop its data and go back to the remaining (own) pantry
+        // Left the pantry: drop its data and go back to what remains
         queryClient.invalidateQueries({ queryKey: ['pantries'] });
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
         toast.success(t.members.left);
-        navigate('/', { replace: true });
+        navigate(backTo, { replace: true });
         return;
       }
       refresh();
@@ -111,17 +115,20 @@ export function PantryMembers() {
   };
 
   if (pantryLoading) return <LoadingSpinner text={t.common.loading} />;
-  if (!pantry) return <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.pantry.noPantry} />;
+  if (!pantry && pantryId) return <EmptyState icon="🔍" title={t.common.notFound} description={t.pantries.notFound} />;
+  if (!pantry) return <NoPantry />;
 
   const leaving = removing?.userId === user?.id;
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title={t.members.title} description={t.members.subtitle(pantry.name)} backTo="/" backLabel={t.nav.home} />
+      <PageHeader title={t.members.title} description={t.members.subtitle(pantry.name)} backTo={backTo} backLabel={pantryId ? t.nav.pantries : t.nav.home} />
 
-      <div className="mb-4">
-        <PantrySwitcher />
-      </div>
+      {!pantryId && (
+        <div className="mb-4">
+          <PantrySwitcher />
+        </div>
+      )}
 
       {isOwner && (
         <form onSubmit={onRename} className="mb-6 rounded-lg bg-white p-4 shadow-sm sm:p-6" noValidate>

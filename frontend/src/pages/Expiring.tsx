@@ -3,6 +3,7 @@ import { pantryStockApi } from '../api/stock';
 import { PageHeader } from '../components/PageHeader';
 import { PantrySwitcher } from '../components/PantrySwitcher';
 import { EmptyState } from '../components/EmptyState';
+import { NoPantry } from '../components/NoPantry';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { BatchCard } from '../components/BatchCard';
@@ -62,7 +63,7 @@ export function Expiring() {
       ) : pantryError || query.isError ? (
         <ErrorMessage message={t.common.errorGeneric} retry={() => query.refetch()} />
       ) : !pantry ? (
-        <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.pantry.noPantry} />
+        <NoPantry />
       ) : query.data && query.data.length === 0 ? (
         <EmptyState icon="✅" title={t.expiring.emptyTitle} description={t.expiring.emptyText} />
       ) : (

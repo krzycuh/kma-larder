@@ -1,6 +1,7 @@
 package pl.kmazurek.larder.infrastructure.persistence
 
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import pl.kmazurek.larder.domain.model.pantry.Pantry
 import pl.kmazurek.larder.domain.model.pantry.PantryId
 import pl.kmazurek.larder.domain.model.pantry.PantryMember
@@ -22,6 +23,21 @@ class PantryRepositoryImpl(
     override fun findByMember(userId: UserId): List<Pantry> = jpaRepository.findByMember(userId.value).map { PantryMapper.toDomain(it) }
 
     override fun save(pantry: Pantry): Pantry = PantryMapper.toDomain(jpaRepository.save(PantryMapper.toJpa(pantry)))
+
+    override fun delete(id: PantryId) = jpaRepository.deleteById(id.value)
+
+    override fun findMemberships(userId: UserId): List<PantryMember> =
+        memberRepository.findAllByKeyUserId(userId.value).map { PantryMapper.memberToDomain(it) }
+
+    // Two statements: the old default has to go first, a user has at most one (unique index)
+    @Transactional
+    override fun setDefault(
+        userId: UserId,
+        pantryId: PantryId,
+    ) {
+        memberRepository.clearDefault(userId.value)
+        memberRepository.markDefault(userId.value, pantryId.value)
+    }
 
     override fun findMemberRole(
         pantryId: PantryId,

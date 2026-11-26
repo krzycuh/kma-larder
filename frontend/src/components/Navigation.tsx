@@ -48,6 +48,10 @@ export function Navigation() {
         <NavIcon name="replenish" />
         <span>{t.nav.replenish}</span>
       </Link>
+      <Link to="/pantries" className={linkClasses('/pantries')} aria-label={t.nav.pantries}>
+        <NavIcon name="jar" />
+        <span>{t.nav.pantries}</span>
+      </Link>
       {!isViewing && (
         <Link to="/profile" className={linkClasses('/profile')} aria-label={t.nav.profile}>
           <NavIcon name="profile" />

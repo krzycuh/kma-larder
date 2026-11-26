@@ -7,6 +7,21 @@ export const pantriesApi = {
     return response.data;
   },
 
+  create: async (name: string): Promise<Pantry> => {
+    const response = await apiClient.post<Pantry>('/pantries', { name });
+    return response.data;
+  },
+
+  /** Owner only: removes the pantry with its products, batches and history, for every member. */
+  remove: async (pantryId: string): Promise<void> => {
+    await apiClient.delete(`/pantries/${pantryId}`);
+  },
+
+  /** The pantry the pages open on, for the current user only. */
+  setDefault: async (pantryId: string): Promise<void> => {
+    await apiClient.put(`/pantries/${pantryId}/default`);
+  },
+
   rename: async (pantryId: string, name: string): Promise<Pantry> => {
     const response = await apiClient.patch<Pantry>(`/pantries/${pantryId}`, { name });
     return response.data;

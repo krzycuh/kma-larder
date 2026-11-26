@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 
 /**
  * Pantry Aggregate Root (Pantry context)
- * A household pantry that has an owner and members. In MVP every user owns exactly one pantry;
- * family pantries only add members.
+ * A household pantry that has an owner and members. A user may own several (home, allotment) and be a member
+ * of others; a new account has none until it creates one or is added to somebody's.
  */
 data class Pantry(
     val id: PantryId,
@@ -48,4 +48,6 @@ data class PantryMember(
     val pantryId: PantryId,
     val userId: UserId,
     val role: PantryRole,
+    /** The pantry this user's pages open on; at most one per user */
+    val isDefault: Boolean = false,
 )

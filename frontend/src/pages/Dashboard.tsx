@@ -7,6 +7,7 @@ import { t } from '../i18n';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { EmptyState } from '../components/EmptyState';
+import { NoPantry } from '../components/NoPantry';
 import { FreshnessBadge } from '../components/FreshnessBadge';
 import { NavIcon } from '../components/NavIcon';
 import { PantrySwitcher } from '../components/PantrySwitcher';
@@ -107,7 +108,7 @@ export function Dashboard() {
 
       {(pantryError || isError) && <ErrorMessage message={getApiErrorMessage(error)} retry={() => refetch()} />}
       {!pantryLoading && !pantryError && !pantry && (
-        <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.pantry.noPantry} />
+        <NoPantry />
       )}
 
       {data && (

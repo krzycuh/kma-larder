@@ -5,6 +5,7 @@ import { pantryStockApi } from '../api/stock';
 import { PageHeader } from '../components/PageHeader';
 import { PantrySwitcher } from '../components/PantrySwitcher';
 import { EmptyState } from '../components/EmptyState';
+import { NoPantry } from '../components/NoPantry';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { Pagination } from '../components/Pagination';
@@ -134,7 +135,7 @@ export function Stock() {
       ) : pantryError || productsQuery.isError ? (
         <ErrorMessage message={t.common.errorGeneric} retry={() => productsQuery.refetch()} />
       ) : !pantry ? (
-        <EmptyState icon="🫙" title={t.stock.emptyTitle} description={t.pantry.noPantry} />
+        <NoPantry />
       ) : productsQuery.data && productsQuery.data.items.length === 0 ? (
         hasFilters ? (
           <EmptyState icon="🔍" title={t.common.notFound} description={t.stock.emptyFiltered} />

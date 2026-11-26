@@ -2,8 +2,6 @@ package pl.kmazurek.larder.application.usecase.auth
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
-import pl.kmazurek.larder.application.usecase.pantry.CreateDefaultPantry
 import pl.kmazurek.larder.domain.model.user.Email
 import pl.kmazurek.larder.domain.model.user.User
 import pl.kmazurek.larder.domain.model.user.UserRole
@@ -11,16 +9,15 @@ import pl.kmazurek.larder.domain.repository.UserRepository
 import pl.kmazurek.larder.infrastructure.security.PasswordEncoderService
 
 /**
- * Use Case: Register a new user and create their default pantry
+ * Use Case: Register a new user. The account starts without a pantry: the user creates one or is added to
+ * a household's pantry by its owner.
  */
 @Service
 class RegisterUser(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoderService,
-    private val createDefaultLibrary: CreateDefaultPantry,
     @Value("\${app.registration.enabled:true}") private val registrationEnabled: Boolean = true,
 ) {
-    @Transactional
     fun execute(
         email: String,
         password: String,
@@ -45,9 +42,7 @@ class RegisterUser(
                 role = UserRole.USER,
             )
 
-        val saved = userRepository.save(user)
-        createDefaultLibrary.execute(saved)
-        return saved
+        return userRepository.save(user)
     }
 }
 
