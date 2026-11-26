@@ -12,13 +12,17 @@ do `main`, który zmienia `backend/` lub `frontend/` (tag `main`), po opublikowa
 1. Skopiuj do **osobnego katalogu** na Pi (np. `/opt/kma-larder`): `docker-compose.prod.yml`, `scripts/`, `.env.production.template`.
    Nie trzymaj tu plików compose innych aplikacji: współdzieliłyby `.env` i względne katalogi (`logs/`, `data/`).
    Projekt ma stałą nazwę `name: kma-larder`, więc nie łączy się z innymi projektami compose.
-2. `cp .env.production.template .env.production` i uzupełnij hasła (`openssl rand -base64 32`) oraz `DATA_PATH` (SSD).
+2. `cp .env.production.template .env.production` i uzupełnij hasła (`openssl rand -base64 32`), `DATA_PATH` (SSD) oraz
+   `APP_ADMIN_EMAIL` (adres pierwszego administratora; bez tego konto nazywa się `admin@example.com`).
 3. Utwórz katalogi danych: `(source .env.production && mkdir -p "$DATA_PATH/postgres" "$BACKUP_PATH" logs)`.
 4. Zaloguj się do GHCR: `echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin`.
 5. `docker compose -f docker-compose.prod.yml --env-file .env.production up -d`.
    Aplikacja jest dostępna na `http://<pi>:8030` (port zmienisz przez `FRONTEND_PORT`). Backend nie publikuje portu:
    `/api` przechodzi przez nginx w kontenerze frontendu do `backend:8080` w sieci compose.
-6. Zaloguj się jako `admin@example.com` / `admin123` i **od razu zmień hasło** (Profil → Zmiana hasła).
+6. Zaloguj się adresem z `APP_ADMIN_EMAIL` i hasłem `admin123`, po czym **od razu zmień hasło** (Profil → Zmiana hasła).
+   Konto administratora tworzy migracja V2, a V4 jednorazowo nadaje mu adres i nazwę z `APP_ADMIN_EMAIL` / `APP_ADMIN_NAME`,
+   o ile nadal nosi domyślne `admin@example.com`. Późniejsza zmiana tych zmiennych niczego nie przestawia; adres zmienisz
+   wtedy w aplikacji (Profil).
 7. HTTPS: patrz [docs/adr/002-https.md](docs/adr/002-https.md) (wymagane pod aparat: skaner kodów i OCR dat). Terminator TLS kieruje ruch na port 8030.
 
 ## Aktualizacja do nowej wersji

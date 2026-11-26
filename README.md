@@ -40,7 +40,8 @@ cd backend && ./gradlew bootRun                         # http://localhost:8080 
 cd frontend && npm install && npm run dev               # http://localhost:5173
 ```
 
-Domyślny administrator: `admin@example.com` / `admin123` (zmień hasło po pierwszym logowaniu).
+Domyślny administrator: `admin@example.com` / `admin123` (zmień hasło po pierwszym logowaniu). Adres i nazwę konta
+ustawisz przed pierwszym startem zmiennymi `APP_ADMIN_EMAIL` / `APP_ADMIN_NAME` (patrz `.env.production.template`).
 
 ## Testy
 

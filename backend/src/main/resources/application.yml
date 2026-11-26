@@ -11,6 +11,11 @@ spring:
           time_zone: UTC
   cache:
     type: simple
+  flyway:
+    # The seeded administrator's address and name (migration V4); the password stays admin123 until changed in the app
+    placeholders:
+      admin-email: ${APP_ADMIN_EMAIL:admin@example.com}
+      admin-name: ${APP_ADMIN_NAME:Admin}
 
 server:
   # Behind the frontend nginx (or a TLS terminator) trust X-Forwarded-* so that the request's
