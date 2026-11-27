@@ -4,6 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* A link or label that looks like a button. A real <button> centres its label on its own; an <a> does not,
+     so next to a button (stretched to its height, or given the 44px touch target on a phone) its text sat at
+     the top. Put `btn` on every button-styled link so both look the same. Utilities (hidden, flex, w-full) win. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 @layer base {
   body {
     @apply bg-white text-gray-900;

@@ -4,7 +4,7 @@ import { pantriesApi } from '../api/pantries';
 import { pickCurrentPantry } from '../utils/currentPantry';
 
 /**
- * Pantries of the current user: their own one first, then household pantries they were invited to.
+ * Pantries of the current user (owned and joined), the default one first. May be empty: a new account has none.
  */
 export function usePantries() {
   return useQuery({
@@ -17,9 +17,11 @@ export function usePantries() {
 const STORAGE_KEY = 'currentPantryId';
 const listeners = new Set<() => void>();
 
+// The switcher's choice lasts for the session (this tab / the opened app): every fresh start lands on
+// the default pantry, so nobody keeps adding to a pantry they switched to days ago.
 function readStoredId(): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    return sessionStorage.getItem(STORAGE_KEY);
   } catch {
     return null;
   }
@@ -27,16 +29,16 @@ function readStoredId(): string | null {
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  window.addEventListener('storage', listener);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener('storage', listener);
   };
 }
 
-export function setCurrentPantryId(id: string) {
+/** Switches the current pantry; `null` goes back to the default one. */
+export function setCurrentPantryId(id: string | null) {
   try {
-    localStorage.setItem(STORAGE_KEY, id);
+    if (id === null) sessionStorage.removeItem(STORAGE_KEY);
+    else sessionStorage.setItem(STORAGE_KEY, id);
   } catch {
     // Private mode etc.: the choice just won't survive a reload
   }
@@ -44,7 +46,7 @@ export function setCurrentPantryId(id: string) {
 }
 
 /**
- * The pantry every stock page works on. Remembered per device; shared by all pages.
+ * The pantry every stock page works on: the one switched to in this session, else the user's default.
  */
 export function useCurrentPantry() {
   const query = usePantries();

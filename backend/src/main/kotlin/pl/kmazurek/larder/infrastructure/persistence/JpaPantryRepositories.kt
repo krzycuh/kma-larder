@@ -1,6 +1,7 @@
 package pl.kmazurek.larder.infrastructure.persistence
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -26,4 +27,19 @@ interface JpaPantryRepository : JpaRepository<PantryJpaEntity, UUID> {
 @Repository
 interface JpaPantryMemberRepository : JpaRepository<PantryMemberJpaEntity, PantryMemberKey> {
     fun findAllByKeyPantryIdOrderByCreatedAtAsc(pantryId: UUID): List<PantryMemberJpaEntity>
+
+    fun findAllByKeyUserId(userId: UUID): List<PantryMemberJpaEntity>
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE PantryMemberJpaEntity m SET m.isDefault = false WHERE m.key.userId = :userId AND m.isDefault = true")
+    fun clearDefault(
+        @Param("userId") userId: UUID,
+    )
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE PantryMemberJpaEntity m SET m.isDefault = true WHERE m.key.userId = :userId AND m.key.pantryId = :pantryId")
+    fun markDefault(
+        @Param("userId") userId: UUID,
+        @Param("pantryId") pantryId: UUID,
+    )
 }

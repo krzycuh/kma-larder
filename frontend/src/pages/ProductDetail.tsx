@@ -75,7 +75,7 @@ export function ProductDetail() {
   const thisYear = consumedByYear.find((c) => c.year === year)?.quantity ?? 0;
   const lastYear = consumedByYear.find((c) => c.year === year - 1);
   const smallButton =
-    'rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50';
+    'btn rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50';
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -100,7 +100,7 @@ export function ProductDetail() {
           <div className="flex flex-wrap gap-2">
             <Link
               to={`/add?productId=${product.id}`}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="btn rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {t.product.addBatch}
             </Link>

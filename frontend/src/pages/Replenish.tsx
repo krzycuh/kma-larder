@@ -4,6 +4,7 @@ import { pantryStockApi } from '../api/stock';
 import { PageHeader } from '../components/PageHeader';
 import { PantrySwitcher } from '../components/PantrySwitcher';
 import { EmptyState } from '../components/EmptyState';
+import { NoPantry } from '../components/NoPantry';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { useCurrentPantry } from '../hooks/usePantries';
@@ -32,7 +33,7 @@ export function Replenish() {
       ) : pantryError || query.isError ? (
         <ErrorMessage message={t.common.errorGeneric} retry={() => query.refetch()} />
       ) : !pantry ? (
-        <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.pantry.noPantry} />
+        <NoPantry />
       ) : query.data && query.data.length === 0 ? (
         <EmptyState icon="🧺" title={t.replenish.emptyTitle} description={t.replenish.emptyText} />
       ) : (
@@ -54,7 +55,7 @@ export function Replenish() {
                 <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">{t.replenish.missing(item.missing)}</span>
                 <Link
                   to={`/add?productId=${item.product.id}`}
-                  className="hidden rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:inline-block"
+                  className="btn hidden rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:inline-flex"
                 >
                   + {t.product.addBatch.replace('+ ', '')}
                 </Link>

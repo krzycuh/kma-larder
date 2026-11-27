@@ -41,6 +41,7 @@ export const pl = {
     stock: 'Stan',
     expiring: 'Terminy',
     replenish: 'Zakupy',
+    pantries: 'Spiżarnie',
     profile: 'Profil',
     users: 'Użytkownicy',
     add: '+ Dodaj',
@@ -128,8 +129,40 @@ export const pl = {
     emptyPantryText: 'Dodaj pierwszy produkt: słoik przetworów, paczkę mąki, zgrzewkę wody.',
   },
   pantry: {
-    noPantry: 'Nie masz jeszcze spiżarni.',
+    noPantryTitle: 'Nie masz jeszcze spiżarni',
+    noPantry: 'Załóż spiżarnię dla swojego domu albo dołącz do spiżarni, którą ktoś z domowników już prowadzi.',
+    noPantryJoin: (email: string) =>
+      `Chcesz dołączyć do istniejącej? Poproś jej właściciela, żeby dodał Cię jako domownika po adresie ${email}.`,
+    noPantryViewed: 'Ten użytkownik nie założył spiżarni i do żadnej nie należy.',
     switcherLabel: 'Spiżarnia',
+    manage: 'Zarządzaj',
+  },
+  pantries: {
+    title: 'Spiżarnie',
+    subtitle: 'Spiżarnie, które prowadzisz, i te, do których należysz.',
+    defaultBadge: 'domyślna',
+    defaultHint: 'Domyślna spiżarnia otwiera się po uruchomieniu aplikacji.',
+    setDefault: 'Ustaw jako domyślną',
+    defaultSet: (name: string) => `„${name}” jest teraz domyślna`,
+    people: (n: number) =>
+      n === 1 ? 'tylko Ty' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? `${n} osoby` : `${n} osób`,
+    members: 'Domownicy',
+    newSection: 'Nowa spiżarnia',
+    newHint: 'Na przykład osobna dla działki albo domu rodziców. Domowników dodasz po jej założeniu.',
+    nameLabel: 'Nazwa spiżarni',
+    namePlaceholder: 'np. Dom',
+    create: 'Załóż',
+    creating: 'Zakładanie...',
+    created: (name: string) => `Założono „${name}”`,
+    delete: 'Usuń',
+    deleteFull: 'Usuń spiżarnię',
+    deleteConfirmTitle: (name: string) => `Usunąć „${name}”?`,
+    deleteConfirmText: (members: number) =>
+      'Znikną wszystkie jej produkty, partie i historia' +
+      (members > 1 ? ', także dla pozostałych domowników' : '') +
+      '. Tego nie da się cofnąć.',
+    deleted: 'Spiżarnia usunięta',
+    notFound: 'Nie ma takiej spiżarni albo już do niej nie należysz.',
   },
   product: {
     name: 'Nazwa',

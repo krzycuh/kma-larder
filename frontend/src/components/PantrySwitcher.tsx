@@ -1,8 +1,9 @@
+import { Link } from 'react-router-dom';
 import { useCurrentPantry } from '../hooks/usePantries';
 import { t } from '../i18n';
 
 /**
- * Picks the pantry the stock pages work on. Hidden when the user has only their own pantry.
+ * Picks the pantry the stock pages work on, for this session. Hidden when the user has only one pantry.
  */
 export function PantrySwitcher() {
   const { pantries, pantry, setPantry } = useCurrentPantry();
@@ -22,10 +23,13 @@ export function PantrySwitcher() {
         {pantries.map((item) => (
           <option key={item.id} value={item.id}>
             {item.name}
-            {item.memberCount > 1 ? ` (${item.memberCount})` : ''}
+            {item.isDefault ? ` (${t.pantries.defaultBadge})` : ''}
           </option>
         ))}
       </select>
+      <Link to="/pantries" className="flex-shrink-0 text-sm font-medium text-blue-600 hover:text-blue-700">
+        {t.pantry.manage}
+      </Link>
     </div>
   );
 }

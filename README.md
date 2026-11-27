@@ -11,7 +11,7 @@ Aplikacja webowa (mobile-first, PWA) do śledzenia domowej spiżarni: ile czego 
 - **Historia** – każda zmiana (dodano, zużyto, wyrzucono, korekta) z osobą i datą; zużycie roczne na karcie produktu („ile słoików dżemu schodzi w roku”).
 - **Dodawanie** – autouzupełnianie z własnych produktów, skaner kodów EAN z podpowiedzią nazwy, kategorii i miniatury z Open Food Facts (miniatura to tylko link, aplikacja nie przechowuje zdjęć), **OCR daty ważności ze zdjęcia** (w telefonie, bez wysyłania zdjęcia), duże przyciski ilości.
 - **Powiadomienia** – tygodniowy raport na ntfy: co po terminie, co kończy się wkrótce, czego brakuje.
-- **Domownicy** – spiżarnia wspólna dla gospodarstwa: właściciel dodaje domowników po e-mailu.
+- **Spiżarnie i domownicy** – spiżarnia wspólna dla gospodarstwa: właściciel dodaje domowników po e-mailu. Nowe konto nie ma spiżarni: zakłada ją albo zostaje dodane do istniejącej. Ekran „Spiżarnie”: lista, zakładanie kolejnych (np. działka), usuwanie, opuszczanie i wybór domyślnej.
 - **Konta** – rejestracja (wyłączalna flagą), logowanie JWT z refresh tokenem, profil, panel admina (blokada konta, reset hasła, podgląd konta użytkownika tylko do odczytu).
 
 ## Stack

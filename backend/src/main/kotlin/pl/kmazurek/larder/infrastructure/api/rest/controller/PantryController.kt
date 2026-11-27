@@ -9,18 +9,23 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import pl.kmazurek.larder.application.dto.CreatePantryRequest
 import pl.kmazurek.larder.application.dto.InvitePantryMemberRequest
 import pl.kmazurek.larder.application.dto.PantryDto
 import pl.kmazurek.larder.application.dto.PantryMemberDto
 import pl.kmazurek.larder.application.dto.RenamePantryRequest
+import pl.kmazurek.larder.application.usecase.pantry.CreatePantry
+import pl.kmazurek.larder.application.usecase.pantry.DeletePantry
 import pl.kmazurek.larder.application.usecase.pantry.InvitePantryMember
 import pl.kmazurek.larder.application.usecase.pantry.ListMyPantries
 import pl.kmazurek.larder.application.usecase.pantry.ListPantryMembers
 import pl.kmazurek.larder.application.usecase.pantry.RemovePantryMember
 import pl.kmazurek.larder.application.usecase.pantry.RenamePantry
+import pl.kmazurek.larder.application.usecase.pantry.SetDefaultPantry
 import pl.kmazurek.larder.domain.model.pantry.PantryId
 import pl.kmazurek.larder.domain.model.user.UserId
 import pl.kmazurek.larder.infrastructure.logging.AuditLogger
@@ -36,11 +41,49 @@ class PantryController(
     private val invitePantryMember: InvitePantryMember,
     private val removePantryMember: RemovePantryMember,
     private val renamePantry: RenamePantry,
+    private val createPantry: CreatePantry,
+    private val deletePantry: DeletePantry,
+    private val setDefaultPantry: SetDefaultPantry,
     private val auditLogger: AuditLogger,
 ) {
     @GetMapping
     fun myPantries(authentication: Authentication): ResponseEntity<List<PantryDto>> =
         ResponseEntity.ok(listMyPantries.summaries(authentication.userId()))
+
+    @PostMapping
+    fun create(
+        authentication: Authentication,
+        @Valid @RequestBody request: CreatePantryRequest,
+    ): ResponseEntity<PantryDto> {
+        val dto = createPantry.execute(authentication.userId(), request.name)
+        auditLogger.log("PANTRY_CREATED", details = mapOf("pantryId" to dto.id))
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto)
+    }
+
+    /**
+     * Owner only: removes the pantry with everything in it, for every member.
+     */
+    @DeleteMapping("/{pantryId}")
+    fun delete(
+        authentication: Authentication,
+        @PathVariable pantryId: String,
+    ): ResponseEntity<Void> {
+        deletePantry.execute(authentication.userId(), PantryId.fromString(pantryId))
+        auditLogger.log("PANTRY_DELETED", details = mapOf("pantryId" to pantryId))
+        return ResponseEntity.noContent().build()
+    }
+
+    /**
+     * The pantry the current user's pages open on.
+     */
+    @PutMapping("/{pantryId}/default")
+    fun setDefault(
+        authentication: Authentication,
+        @PathVariable pantryId: String,
+    ): ResponseEntity<Void> {
+        setDefaultPantry.execute(authentication.userId(), PantryId.fromString(pantryId))
+        return ResponseEntity.noContent().build()
+    }
 
     @PatchMapping("/{pantryId}")
     fun rename(

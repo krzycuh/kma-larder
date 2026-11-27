@@ -19,6 +19,18 @@ interface PantryRepository {
 
     fun save(pantry: Pantry): Pantry
 
+    /** Removes the pantry with everything in it: members, products, batches, history */
+    fun delete(id: PantryId)
+
+    /** The user's memberships, one per pantry they belong to */
+    fun findMemberships(userId: UserId): List<PantryMember>
+
+    /** Marks this pantry as the user's default one, instead of any other */
+    fun setDefault(
+        userId: UserId,
+        pantryId: PantryId,
+    )
+
     fun findMemberRole(
         pantryId: PantryId,
         userId: UserId,

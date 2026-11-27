@@ -45,6 +45,8 @@ class PantryMemberJpaEntity(
     var key: PantryMemberKey,
     @Column(nullable = false, length = 20)
     var role: String,
+    @Column(name = "is_default", nullable = false)
+    var isDefault: Boolean = false,
     @Column(name = "created_at", nullable = false, updatable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),
 )

@@ -6,7 +6,7 @@ import { pantryStockApi, productsApi } from '../api/stock';
 import { PageHeader } from '../components/PageHeader';
 import { PantrySwitcher } from '../components/PantrySwitcher';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { EmptyState } from '../components/EmptyState';
+import { NoPantry } from '../components/NoPantry';
 import { ProductPicker } from '../components/ProductPicker';
 import { ProductFields } from '../components/ProductFields';
 import { ProductThumb } from '../components/ProductThumb';
@@ -170,7 +170,7 @@ export function AddStock() {
   };
 
   if (pantryLoading || (prefillId && prefill.isLoading)) return <LoadingSpinner />;
-  if (!pantry) return <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.pantry.noPantry} />;
+  if (!pantry) return <NoPantry />;
 
   const parsedBestBefore = parseDateInput(bestBefore).date;
   const ocrButton = (target: 'bestBefore' | 'producedOn') => (

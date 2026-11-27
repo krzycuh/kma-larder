@@ -8,6 +8,8 @@ export interface Pantry {
   /** Role of the current user in this pantry */
   myRole: PantryRole;
   memberCount: number;
+  /** The pantry the current user's pages open on; exactly one of their pantries has it */
+  isDefault: boolean;
 }
 
 export interface PantryMember {

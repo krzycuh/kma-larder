@@ -48,6 +48,10 @@ export function Navigation() {
         <NavIcon name="replenish" />
         <span>{t.nav.replenish}</span>
       </Link>
+      <Link to="/pantries" className={linkClasses('/pantries')} aria-label={t.nav.pantries}>
+        <NavIcon name="jar" />
+        <span>{t.nav.pantries}</span>
+      </Link>
       {!isViewing && (
         <Link to="/profile" className={linkClasses('/profile')} aria-label={t.nav.profile}>
           <NavIcon name="profile" />
@@ -88,7 +92,7 @@ export function Navigation() {
             {!isViewing && (
               <Link
                 to="/add"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="btn rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 aria-label={t.nav.add}
               >
                 {t.nav.add}
@@ -133,7 +137,7 @@ export function Navigation() {
           {!isViewing && (
             <Link
               to="/add"
-              className="flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white"
+              className="btn flex rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white"
               aria-label={t.nav.add}
             >
               {t.nav.add}

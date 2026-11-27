@@ -7,6 +7,7 @@ import { t } from '../i18n';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { EmptyState } from '../components/EmptyState';
+import { NoPantry } from '../components/NoPantry';
 import { FreshnessBadge } from '../components/FreshnessBadge';
 import { NavIcon } from '../components/NavIcon';
 import { PantrySwitcher } from '../components/PantrySwitcher';
@@ -78,13 +79,13 @@ export function Dashboard() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
             to="/add"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="btn rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             {t.dashboard.add}
           </Link>
           <Link
             to="/add?scan=1"
-            className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="btn gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             <NavIcon name="camera" />
             {t.dashboard.scan}
@@ -107,7 +108,7 @@ export function Dashboard() {
 
       {(pantryError || isError) && <ErrorMessage message={getApiErrorMessage(error)} retry={() => refetch()} />}
       {!pantryLoading && !pantryError && !pantry && (
-        <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.pantry.noPantry} />
+        <NoPantry />
       )}
 
       {data && (
@@ -127,7 +128,7 @@ export function Dashboard() {
           {data.productCount === 0 ? (
             <div className="mt-6 rounded-lg bg-white shadow-sm">
               <EmptyState icon="🫙" title={t.dashboard.emptyPantryTitle} description={t.dashboard.emptyPantryText}>
-                <Link to="/add" className="inline-block rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">
+                <Link to="/add" className="btn rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">
                   {t.dashboard.add}
                 </Link>
               </EmptyState>
